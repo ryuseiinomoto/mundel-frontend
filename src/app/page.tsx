@@ -34,7 +34,7 @@ export default function MundelDashboard() {
     setError(null)
 
     try {
-      const res = await fetch("http://localhost:8000/api/analyze", {
+      const res = await fetch("https://mundel-backend-490996932437.europe-west1.run.app/api/analyze", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
