@@ -3,11 +3,27 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --border: #e5e5e5;
+  --muted-foreground: #737373;
+  --card: #fafafa;
+  --secondary: #f5f5f5;
+  --terminal-green: #22c55e;
+  --terminal-amber: #eab308;
+  --terminal-red: #ef4444;
+  --terminal-cyan: #06b6d4;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-border: var(--border);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-card: var(--card);
+  --color-secondary: var(--secondary);
+  --color-terminal-green: var(--terminal-green);
+  --color-terminal-amber: var(--terminal-amber);
+  --color-terminal-red: var(--terminal-red);
+  --color-terminal-cyan: var(--terminal-cyan);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -16,6 +32,10 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --border: #262626;
+    --muted-foreground: #a3a3a3;
+    --card: #171717;
+    --secondary: #262626;
   }
 }
 
@@ -23,4 +43,17 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+@keyframes ticker {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-ticker {
+  animation: ticker 30s linear infinite;
 }
