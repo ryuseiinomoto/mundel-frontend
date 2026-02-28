@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslation } from "react-i18next"
 import { Calendar } from "lucide-react"
 
 interface CalendarEvent {
@@ -156,6 +157,8 @@ function ActualCell({ actual, forecast }: { actual: string; forecast: string }) 
 }
 
 export function EconomicCalendar() {
+  const { t } = useTranslation()
+  
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
@@ -163,9 +166,9 @@ export function EconomicCalendar() {
         <div className="flex items-center gap-2">
           <Calendar className="h-3.5 w-3.5 text-terminal-amber" />
           <span className="text-[10px] font-bold tracking-[0.2em] text-foreground">
-            ECONOMIC CALENDAR
+            {t('ECONOMIC_CALENDAR_TITLE')}
           </span>
-          <span className="text-[9px] tracking-wider text-terminal-amber">(Trading Economics)</span>
+          <span className="text-[9px] tracking-wider text-terminal-amber">{t('ECONOMIC_CALENDAR_SUBTITLE')}</span>
         </div>
         <span className="text-[9px] text-muted-foreground/50">UTC+9</span>
       </div>

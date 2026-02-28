@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslation } from "react-i18next"
 import { Newspaper, ExternalLink } from "lucide-react"
 
 interface NewsItem {
@@ -84,6 +85,8 @@ function SentimentBadge({ sentiment }: { sentiment: NewsItem["sentiment"] }) {
 }
 
 export function NewsSentiment() {
+  const { t } = useTranslation()
+  
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
@@ -91,7 +94,7 @@ export function NewsSentiment() {
         <div className="flex items-center gap-2">
           <Newspaper className="h-3.5 w-3.5 text-terminal-green" />
           <span className="text-[10px] font-bold tracking-[0.2em] text-foreground">
-            {'NEWS & SENTIMENT'}
+            {t('NEWS_SENTIMENT_TITLE')}
           </span>
         </div>
         <span className="text-[9px] text-muted-foreground/50">LIVE FEED</span>

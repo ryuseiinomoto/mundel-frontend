@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useTranslation } from "react-i18next"
 import { TerminalHeader } from "@/components/terminal-header"
 import { NewsInput } from "@/components/news-input"
 import { ISLMBPGraph } from "@/components/is-lm-bp-graph"
@@ -13,12 +14,19 @@ import { StatusTicker } from "@/components/status-ticker"
 import { AlertCircle } from "lucide-react"
 import type { AnalysisResult, ShiftState } from "@/lib/types"
 import { directionToNumber } from "@/lib/types"
+import "@/i18n"
 
 export default function MundelDashboard() {
+  const { t } = useTranslation()
+  const [mounted, setMounted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<AnalysisResult | null>(null)
   const [shifts, setShifts] = useState<ShiftState>({ is: 0, lm: 0, bp: 0 })
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleAnalyze = useCallback(async (newsText: string) => {
     setIsLoading(true)
@@ -64,6 +72,10 @@ export default function MundelDashboard() {
     }
   }, [])
 
+  if (!mounted) {
+    return null
+  }
+
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
       {/* Top: Terminal Header */}
@@ -101,7 +113,7 @@ export default function MundelDashboard() {
             <div className="flex items-center gap-2">
               <AlertCircle className="h-3.5 w-3.5 text-terminal-red" />
               <span className="text-[10px] tracking-wider text-terminal-red">
-                BACKEND ERROR: {error}
+                {t('BACKEND_ERROR')}: {error}
               </span>
             </div>
           </motion.div>
@@ -117,7 +129,7 @@ export default function MundelDashboard() {
             <div className="absolute inset-0 flex flex-col">
               <div className="flex items-center justify-between border-b border-border px-5 py-2">
                 <span className="text-[10px] font-bold tracking-[0.2em] text-muted-foreground">
-                  IS-LM-BP MODEL
+                  {t('IS_LM_BP_MODEL')}
                 </span>
                 <div className="flex items-center gap-3">
                   {[
@@ -133,7 +145,7 @@ export default function MundelDashboard() {
                     </span>
                   ))}
                   <span className="text-[9px] text-muted-foreground/40">
-                    {result ? (result.regime ?? "READY").toUpperCase() : "READY"}
+                    {result ? (result.regime ?? t('READY')).toUpperCase() : t('READY')}
                   </span>
                 </div>
               </div>

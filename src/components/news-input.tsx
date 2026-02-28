@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
+import { useTranslation } from "react-i18next"
 import { Send, Loader2, Newspaper } from "lucide-react"
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function NewsInput({ onSubmit, isLoading }: Props) {
+  const { t } = useTranslation()
   const [text, setText] = useState("")
 
   function handleSubmit(e: React.FormEvent) {
@@ -30,7 +32,7 @@ export function NewsInput({ onSubmit, isLoading }: Props) {
       <div className="flex items-center gap-2">
         <Newspaper className="h-3.5 w-3.5 text-terminal-amber" />
         <span className="text-[10px] font-bold tracking-[0.2em] text-terminal-amber">
-          NEWS INPUT
+          {t('NEWS_INPUT_TITLE')}
         </span>
       </div>
 
@@ -39,7 +41,7 @@ export function NewsInput({ onSubmit, isLoading }: Props) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={"Enter macroeconomic news or policy events...\ne.g. FRBが50bpsの利上げを実施\ne.g. 日銀がYCC解除を決定"}
+          placeholder={t('NEWS_INPUT_PLACEHOLDER')}
           rows={5}
           className="w-full resize-none rounded border border-border bg-background px-3 py-2.5 text-xs leading-relaxed text-foreground placeholder:text-muted-foreground/40 focus:border-terminal-green/60 focus:outline-none focus:ring-1 focus:ring-terminal-green/30"
         />
@@ -58,12 +60,12 @@ export function NewsInput({ onSubmit, isLoading }: Props) {
         {isLoading ? (
           <>
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ANALYZING...
+            {t('NEWS_INPUT_BUTTON_LOADING')}
           </>
         ) : (
           <>
             <Send className="h-3.5 w-3.5" />
-            ANALYZE
+            {t('NEWS_INPUT_BUTTON')}
           </>
         )}
       </motion.button>

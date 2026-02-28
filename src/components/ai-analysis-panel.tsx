@@ -1,6 +1,7 @@
 "use client"
 
 import { motion, AnimatePresence } from "framer-motion"
+import { useTranslation } from "react-i18next"
 import { Brain, Loader2, Sparkles, ChevronRight, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react"
 import type { AnalysisResult, ShiftState } from "@/lib/types"
 
@@ -67,6 +68,8 @@ function ShiftIndicator({ label, value, colorClass }: { label: string; value: nu
 }
 
 export function AIAnalysisPanel({ result, shifts, isLoading }: Props) {
+  const { t } = useTranslation()
+  
   return (
     <div className="flex h-full flex-col">
       {/* Section Header */}
@@ -74,9 +77,9 @@ export function AIAnalysisPanel({ result, shifts, isLoading }: Props) {
         <div className="flex items-center gap-2.5">
           <Brain className="h-4 w-4 text-terminal-cyan" />
           <span className="text-[11px] font-bold tracking-[0.2em] text-foreground">
-            AI ANALYSIS
+            {t('ANALYSIS_TITLE')}
           </span>
-          <span className="text-[10px] tracking-wider text-terminal-cyan">(Gemini)</span>
+          <span className="text-[10px] tracking-wider text-terminal-cyan">{t('ANALYSIS_SUBTITLE')}</span>
         </div>
         {isLoading && (
           <div className="flex items-center gap-2">
