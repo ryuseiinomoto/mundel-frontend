@@ -43,7 +43,8 @@ i18n
   .use(initReactI18next) // react-i18nextに渡す
   .init({
     resources,
-    fallbackLng: "en", // 検出できなかった場合の言語
+    lng: "ja",
+    fallbackLng: "ja", // 検出できなかった場合の言語
     interpolation: {
       escapeValue: false // エスケープを行わない
     }
