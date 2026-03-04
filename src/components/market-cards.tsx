@@ -48,7 +48,7 @@ function Card({
 
 export function MarketCards({ fxRate, usInterestRate, cpi }: Props) {
   const format = (v: number | string | undefined) =>
-    v == null ? "---" : typeof v === "number" ? v.toFixed(2) : v
+    v == null || v === "" ? "---" : typeof v === "number" ? v.toFixed(2) : String(v)
 
   const cards = [
     {

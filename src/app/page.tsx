@@ -24,29 +24,83 @@ export default function MundelDashboard() {
   const [shifts, setShifts] = useState<ShiftState>({ is: 0, lm: 0, bp: 0 })
   const [error, setError] = useState<string | null>(null)
 
+  const [usdjpy, setUsdjpy] = useState<string>("---")
+  const [interestRate, setInterestRate] = useState<string>("---")
+  const [cpi, setCpi] = useState<string>("---")
+
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  const apiBase =
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+
+  useEffect(() => {
+    if (!mounted) return
+    const fetchMarketData = async () => {
+      try {
+        const res = await fetch(`${apiBase}/api/analysis`)
+        if (!res.ok) return
+        const raw = await res.json()
+        const te = raw.te_macro_snapshot ?? {}
+        const market = raw.market_data ?? {}
+        const exchange = market.exchange ?? {}
+        const indicators = market.indicators ?? {}
+
+        const jpy =
+          te.usd_jpy ?? exchange.current_price ?? null
+        const rate =
+          te.us_policy_rate ??
+          indicators.us_policy_rate ??
+          null
+        const cpiVal =
+          te.us_cpi_yoy ??
+          indicators.us_cpi ??
+          null
+
+        if (jpy != null && typeof jpy === "number") {
+          setUsdjpy(jpy.toFixed(2))
+        }
+        if (rate != null && typeof rate === "number") {
+          setInterestRate(`${rate.toFixed(2)}%`)
+        }
+        if (cpiVal != null && typeof cpiVal === "number") {
+          setCpi(`${cpiVal.toFixed(2)}%`)
+        }
+      } catch {
+        // 取得失敗時は --- のまま
+      }
+    }
+    fetchMarketData()
+  }, [mounted, apiBase])
 
   const handleAnalyze = useCallback(async (newsText: string) => {
     setIsLoading(true)
     setError(null)
 
     try {
-      const res = await fetch(
-        "https://mundel-backend-490996932437.europe-west1.run.app/api/analyze",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ news_text: newsText }),
-        }
-      )
+      const res = await fetch(`${apiBase}/api/analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ news_text: newsText }),
+      })
 
       if (!res.ok) throw new Error(`Error ${res.status}`)
 
       const raw = await res.json()
       const analysis = raw.analysis ?? {}
       const market = raw.market_data ?? {}
+      const te = raw.te_macro_snapshot ?? {}
+      const exchange = market.exchange ?? {}
+      const indicators = market.indicators ?? {}
+
+      const jpy = te.usd_jpy ?? exchange.current_price ?? null
+      const rate = te.us_policy_rate ?? indicators?.us_policy_rate ?? null
+      const cpiVal = te.us_cpi_yoy ?? indicators?.us_cpi ?? null
+      if (jpy != null && typeof jpy === "number") setUsdjpy(jpy.toFixed(2))
+      if (rate != null && typeof rate === "number") setInterestRate(`${rate.toFixed(2)}%`)
+      if (cpiVal != null && typeof cpiVal === "number") setCpi(`${cpiVal.toFixed(2)}%`)
+
       const data: AnalysisResult = {
         ...raw,
         is_shift: analysis.is_shift,
@@ -70,7 +124,7 @@ export default function MundelDashboard() {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [apiBase])
 
   if (!mounted) {
     return null
@@ -93,9 +147,9 @@ export default function MundelDashboard() {
         <div className="flex w-[40%] shrink-0 items-center bg-card/50 px-4 py-3">
           <div className="w-full">
             <MarketCards
-              fxRate={result?.fx_rate}
-              usInterestRate={result?.us_interest_rate}
-              cpi={result?.cpi}
+              fxRate={usdjpy}
+              usInterestRate={interestRate}
+              cpi={cpi}
             />
           </div>
         </div>
