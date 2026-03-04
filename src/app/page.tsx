@@ -16,6 +16,18 @@ import type { AnalysisResult, ShiftState } from "@/lib/types"
 import { directionToNumber } from "@/lib/types"
 import "@/i18n"
 
+function getApiBase(): string {
+  if (typeof window === "undefined") {
+    // SSR / ビルド時はローカル想定（クライアント側で再評価される）
+    return "http://localhost:8080"
+  }
+  const hostname = window.location.hostname
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return "http://localhost:8080"
+  }
+  return "https://mundel-backend-490996932437.europe-west1.run.app"
+}
+
 export default function MundelDashboard() {
   const { t } = useTranslation()
   const [mounted, setMounted] = useState(false)
@@ -32,8 +44,7 @@ export default function MundelDashboard() {
     setMounted(true)
   }, [])
 
-  const apiBase =
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+  const apiBase = getApiBase()
 
   useEffect(() => {
     if (!mounted) return
