@@ -13,7 +13,6 @@ import { NewsSentiment } from "@/components/news-sentiment"
 import { StatusTicker } from "@/components/status-ticker"
 import { AlertCircle } from "lucide-react"
 import type { AnalysisResult, ShiftState } from "@/lib/types"
-import { directionToNumber } from "@/lib/types"
 import "@/i18n"
 
 function getApiBase(): string {
@@ -34,6 +33,13 @@ export default function MundelDashboard() {
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<AnalysisResult | null>(null)
   const [shifts, setShifts] = useState<ShiftState>({ is: 0, lm: 0, bp: 0 })
+  const [analysisResult, setAnalysisResult] = useState<{
+    is_shift: number
+    lm_shift: number
+    bp_shift: number
+    equilibrium_e0: { y: number; r: number }
+    predicted_equilibrium: { y: number; r: number }
+  } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const [usdjpy, setUsdjpy] = useState<string>("---")
@@ -125,11 +131,37 @@ export default function MundelDashboard() {
         cpi: market.indicators?.us_cpi,
       }
       setResult(data)
-      setShifts({
-        is: directionToNumber(analysis.is_shift),
-        lm: directionToNumber(analysis.lm_shift),
-        bp: directionToNumber(analysis.bp_shift),
-      })
+      const delta = raw.shifts_delta ?? {}
+      const toNum = (v: unknown): number => {
+        if (typeof v === "number" && !Number.isNaN(v))
+          return Math.max(-10, Math.min(10, v))
+        return 0
+      }
+      const isVal = toNum(delta.is ?? analysis.is_shift)
+      const lmVal = toNum(delta.lm ?? analysis.lm_shift)
+      const bpVal = toNum(delta.bp ?? analysis.bp_shift)
+      setShifts({ is: isVal, lm: lmVal, bp: bpVal })
+
+      const e0 = raw.equilibrium_e0
+      const e1 = raw.equilibrium_e1
+      if (
+        e0 &&
+        typeof e0.y === "number" &&
+        typeof e0.r === "number" &&
+        e1 &&
+        typeof e1.y === "number" &&
+        typeof e1.r === "number"
+      ) {
+        setAnalysisResult({
+          is_shift: isVal,
+          lm_shift: lmVal,
+          bp_shift: bpVal,
+          equilibrium_e0: { y: e0.y, r: e0.r },
+          predicted_equilibrium: { y: e1.y, r: e1.r },
+        })
+      } else {
+        setAnalysisResult(null)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error")
     } finally {
@@ -215,7 +247,11 @@ export default function MundelDashboard() {
                 </div>
               </div>
               <div className="flex-1">
-                <ISLMBPGraph shifts={shifts} isAnimating={isLoading} />
+                <ISLMBPGraph
+                  shifts={shifts}
+                  isAnimating={isLoading}
+                  analysisResult={analysisResult}
+                />
               </div>
             </div>
           </div>
