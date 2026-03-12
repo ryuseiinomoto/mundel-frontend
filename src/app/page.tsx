@@ -40,6 +40,12 @@ export default function MundelDashboard() {
     equilibrium_e0: { y: number; r: number }
     predicted_equilibrium: { y: number; r: number }
   } | null>(null)
+  const [macroEffects, setMacroEffects] = useState<{
+    exchange_rate: string
+    interest_rate: string
+    output: string
+    capital_flow: string
+  } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const [usdjpy, setUsdjpy] = useState<string>("---")
@@ -137,8 +143,17 @@ export default function MundelDashboard() {
           return Math.max(-10, Math.min(10, v))
         return 0
       }
+      /** LM曲線: "left"=正（左シフト・利上げ）、"right"=負（右シフト・利下げ） */
+      const toLmNum = (v: unknown): number => {
+        const n = toNum(v)
+        if (n !== 0) return n
+        const s = String(v ?? "").trim().toLowerCase()
+        if (s === "left") return 5
+        if (s === "right") return -5
+        return 0
+      }
       const isVal = toNum(delta.is ?? analysis.is_shift)
-      const lmVal = toNum(delta.lm ?? analysis.lm_shift)
+      const lmVal = toLmNum(delta.lm ?? analysis.lm_shift)
       const bpVal = toNum(delta.bp ?? analysis.bp_shift)
       setShifts({ is: isVal, lm: lmVal, bp: bpVal })
 
@@ -161,6 +176,19 @@ export default function MundelDashboard() {
         })
       } else {
         setAnalysisResult(null)
+      }
+
+      // macro_effects を保存（バックエンドから返却）
+      const me = raw.macro_effects
+      if (me && typeof me === "object") {
+        setMacroEffects({
+          exchange_rate: String(me.exchange_rate ?? "").trim() || "Neutral",
+          interest_rate: String(me.interest_rate ?? "").trim() || "Neutral",
+          output: String(me.output ?? "").trim() || "Neutral",
+          capital_flow: String(me.capital_flow ?? "").trim() || "Neutral",
+        })
+      } else {
+        setMacroEffects(null)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error")
@@ -217,59 +245,61 @@ export default function MundelDashboard() {
         )}
       </AnimatePresence>
 
-      {/* Main Content: Two Column Layout */}
+      {/* Main Content: Graph | AI Insights | Right Column */}
       <div className="flex flex-1 overflow-hidden">
-        {/* LEFT SIDE: 60% - IS-LM-BP Graph + AI Analysis */}
-        <div className="flex w-[60%] flex-col border-r border-border">
+        {/* LEFT: Graph + AI Insights 横並び */}
+        <div className="flex w-[60%] min-w-0 border-r border-border">
           {/* IS-LM-BP Graph */}
-          <div className="relative h-[45%] min-h-[280px] border-b border-border">
-            <div className="absolute inset-0 flex flex-col">
-              <div className="flex items-center justify-between border-b border-border px-5 py-2">
-                <span className="text-[10px] font-bold tracking-[0.2em] text-muted-foreground">
-                  {t('IS_LM_BP_MODEL')}
-                </span>
-                <div className="flex items-center gap-3">
-                  {[
-                    { label: "IS", shift: shifts.is, color: "text-terminal-green" },
-                    { label: "LM", shift: shifts.lm, color: "text-terminal-amber" },
-                    { label: "BP", shift: shifts.bp, color: "text-terminal-cyan" },
-                  ].map((s) => (
+          <div className="relative flex min-w-0 flex-1 flex-col">
+            <div className="flex items-center justify-between border-b border-border px-5 py-2">
+              <span className="text-[10px] font-bold tracking-[0.2em] text-muted-foreground">
+                {t('IS_LM_BP_MODEL')}
+              </span>
+              <div className="flex items-center gap-3">
+                {[
+                  { label: "IS", shift: shifts.is, color: "text-terminal-green", invert: false },
+                  { label: "LM", shift: shifts.lm, color: "text-terminal-amber", invert: true },
+                  { label: "BP", shift: shifts.bp, color: "text-terminal-cyan", invert: false },
+                ].map((s) => {
+                  const dir = s.shift > 0 ? "R" : s.shift < 0 ? "L" : "-"
+                  const display = s.invert ? (s.shift > 0 ? "L" : s.shift < 0 ? "R" : "-") : dir
+                  return (
                     <span key={s.label} className="flex items-center gap-1">
                       <span className="text-[9px] text-muted-foreground">{s.label}:</span>
-                      <span className={`text-[10px] font-bold ${s.color}`}>
-                        {s.shift > 0 ? "R" : s.shift < 0 ? "L" : "-"}
-                      </span>
+                      <span className={`text-[10px] font-bold ${s.color}`}>{display}</span>
                     </span>
-                  ))}
-                  <span className="text-[9px] text-muted-foreground/40">
-                    {result ? (result.regime ?? t('READY')).toUpperCase() : t('READY')}
-                  </span>
-                </div>
+                  )
+                })}
+                <span className="text-[9px] text-muted-foreground/40">
+                  {result ? (result.regime ?? t('READY')).toUpperCase() : t('READY')}
+                </span>
               </div>
-              <div className="flex-1">
-                <ISLMBPGraph
-                  shifts={shifts}
-                  isAnimating={isLoading}
-                  analysisResult={analysisResult}
-                />
-              </div>
+            </div>
+            <div className="min-h-0 flex-1">
+              <ISLMBPGraph
+                shifts={shifts}
+                isAnimating={isLoading}
+                analysisResult={analysisResult}
+              />
             </div>
           </div>
 
-          {/* AI Analysis */}
-          <div className="flex-1 overflow-hidden">
-            <AIAnalysisPanel result={result} shifts={shifts} isLoading={isLoading} />
+          {/* AI Insights パネル（グラフ右隣・スクロール可能） */}
+          <div className="flex w-[320px] shrink-0 flex-col border-l border-border">
+            <AIAnalysisPanel
+              result={result}
+              shifts={shifts}
+              macroEffects={macroEffects}
+              isLoading={isLoading}
+            />
           </div>
         </div>
 
         {/* RIGHT SIDE: 40% - Economic Calendar + News */}
         <div className="flex w-[40%] flex-col">
-          {/* Economic Calendar - Top */}
           <div className="flex h-[55%] flex-col border-b border-border">
             <EconomicCalendar />
           </div>
-
-          {/* News & Sentiment - Bottom */}
           <div className="flex flex-1 flex-col">
             <NewsSentiment />
           </div>

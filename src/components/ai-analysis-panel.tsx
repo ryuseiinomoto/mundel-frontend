@@ -5,9 +5,17 @@ import { useTranslation } from "react-i18next"
 import { Brain, Loader2, Sparkles, ChevronRight, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react"
 import type { AnalysisResult, ShiftState } from "@/lib/types"
 
+interface MacroEffects {
+  exchange_rate: string
+  interest_rate: string
+  output: string
+  capital_flow: string
+}
+
 interface Props {
   result: AnalysisResult | null
   shifts: ShiftState
+  macroEffects: MacroEffects | null
   isLoading: boolean
 }
 
@@ -45,8 +53,20 @@ function EffectBadge({ effect }: { effect: string | undefined }) {
   )
 }
 
-function ShiftIndicator({ label, value, colorClass }: { label: string; value: number; colorClass: string }) {
-  const dir = value > 0 ? "RIGHT" : value < 0 ? "LEFT" : "---"
+function ShiftIndicator({
+  label,
+  value,
+  colorClass,
+  invert,
+}: {
+  label: string
+  value: number
+  colorClass: string
+  invert?: boolean
+}) {
+  const dir = invert
+    ? (value > 0 ? "LEFT" : value < 0 ? "RIGHT" : "---")
+    : (value > 0 ? "RIGHT" : value < 0 ? "LEFT" : "---")
   const percent = Math.min(Math.abs(value) * 30, 100)
 
   return (
@@ -67,17 +87,23 @@ function ShiftIndicator({ label, value, colorClass }: { label: string; value: nu
   )
 }
 
-export function AIAnalysisPanel({ result, shifts, isLoading }: Props) {
+export function AIAnalysisPanel({ result, shifts, macroEffects, isLoading }: Props) {
   const { t } = useTranslation()
-  
+  const me = macroEffects ?? {
+    exchange_rate: result?.exchange_rate_effect ?? "",
+    interest_rate: result?.interest_rate_effect ?? "",
+    output: result?.output_effect ?? "",
+    capital_flow: result?.capital_flow ?? "",
+  }
+
   return (
     <div className="flex h-full flex-col">
       {/* Section Header */}
-      <div className="flex items-center justify-between border-b border-border px-5 py-3">
+      <div className="flex shrink-0 items-center justify-between border-b border-border px-5 py-3">
         <div className="flex items-center gap-2.5">
           <Brain className="h-4 w-4 text-terminal-cyan" />
           <span className="text-[11px] font-bold tracking-[0.2em] text-foreground">
-            {t('ANALYSIS_TITLE')}
+            AI INSIGHTS
           </span>
           <span className="text-[10px] tracking-wider text-terminal-cyan">{t('ANALYSIS_SUBTITLE')}</span>
         </div>
@@ -89,8 +115,8 @@ export function AIAnalysisPanel({ result, shifts, isLoading }: Props) {
         )}
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-5">
+      {/* Content - スクロール可能・読みやすい余白 */}
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
         <AnimatePresence mode="wait">
           {!result && !isLoading ? (
             <motion.div
@@ -133,7 +159,7 @@ export function AIAnalysisPanel({ result, shifts, isLoading }: Props) {
                     </div>
                     <div className="flex flex-col gap-2.5">
                       <ShiftIndicator label="IS CURVE" value={shifts.is} colorClass="text-terminal-green" />
-                      <ShiftIndicator label="LM CURVE" value={shifts.lm} colorClass="text-terminal-amber" />
+                      <ShiftIndicator label="LM CURVE" value={shifts.lm} colorClass="text-terminal-amber" invert />
                       <ShiftIndicator label="BP CURVE" value={shifts.bp} colorClass="text-terminal-cyan" />
                     </div>
                   </section>
@@ -148,10 +174,10 @@ export function AIAnalysisPanel({ result, shifts, isLoading }: Props) {
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       {[
-                        { label: "EXCHANGE RATE", val: result.exchange_rate_effect },
-                        { label: "INTEREST RATE", val: result.interest_rate_effect },
-                        { label: "OUTPUT", val: result.output_effect },
-                        { label: "CAPITAL FLOW", val: result.capital_flow },
+                        { label: "EXCHANGE RATE", val: me.exchange_rate },
+                        { label: "INTEREST RATE", val: me.interest_rate },
+                        { label: "OUTPUT", val: me.output },
+                        { label: "CAPITAL FLOW", val: me.capital_flow },
                       ].map((item) => (
                         <div
                           key={item.label}
@@ -176,21 +202,21 @@ export function AIAnalysisPanel({ result, shifts, isLoading }: Props) {
                     </span>
                   </section>
 
-                  {/* AI Explanation */}
-                  <section className="rounded-md border border-terminal-cyan/20 bg-terminal-cyan/[0.03] p-4">
-                    <div className="mb-3 flex items-center gap-2">
-                      <Brain className="h-3 w-3 text-terminal-cyan" />
+                  {/* AI Explanation - 読みやすいフォントサイズと余白 */}
+                  <section className="rounded-md border border-terminal-cyan/20 bg-terminal-cyan/[0.03] p-5">
+                    <div className="mb-4 flex items-center gap-2">
+                      <Brain className="h-3.5 w-3.5 text-terminal-cyan" />
                       <span className="text-[10px] font-bold tracking-[0.15em] text-terminal-cyan">
                         DETAILED ANALYSIS
                       </span>
                     </div>
-                    <p className="text-[12px] leading-[1.9] text-foreground/85">
+                    <p className="text-[13px] leading-[1.85] text-foreground/90">
                       {result.logic_jp ?? result.explanation}
                     </p>
                     {result.summary && (
-                      <div className="mt-4 border-t border-border/40 pt-3">
+                      <div className="mt-5 border-t border-border/40 pt-4">
                         <span className="text-[9px] tracking-wider text-muted-foreground">SUMMARY</span>
-                        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground/80">
+                        <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground/80">
                           {result.summary}
                         </p>
                       </div>

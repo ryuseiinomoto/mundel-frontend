@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useEffect } from "react"
+import { useMemo, useState, useEffect, JSX } from "react"
 import { motion } from "framer-motion"
 import {
   CartesianGrid,
@@ -14,9 +14,12 @@ import {
   YAxis,
   Label,
 } from "recharts"
+// X/Y軸ラベルのみ Label 使用、曲線ラベルは Customized で SVG 描画
 import type { ShiftState } from "@/lib/types"
 
-const ARROW_COLOR = "#ffaa00"
+const ARROW_COLOR = "#00FF00"
+const ARROW_STROKE = 2
+const LABEL_COLOR = "rgba(226,232,240,0.95)"
 const COLORS = {
   is: "#22c55e",
   lm: "#eab308",
@@ -80,32 +83,28 @@ function buildCurves(
   return { data, eq: { y: yEq, r: rEq } }
 }
 
-function PredictionArrow({
-  props: chartProps,
+const ARROW_MARKER_ID = "islmbp-arrow-marker"
+const LABEL_X_OFFSET = 12
+
+function ChartOverlay({
+  chartProps,
+  data,
   e0,
   e1,
-  isVisible,
+  hasPrediction,
+  isShifting,
 }: {
-  props: Record<string, unknown>
-  e0: { y: number; r: number }
+  chartProps: Record<string, unknown>
+  data: { y: number; rIS: number; rLM: number; rBP: number; rIS0?: number; rLM0?: number; rBP0?: number }[]
+  e0: { y: number; r: number } | null
   e1: { y: number; r: number }
-  isVisible: boolean
+  hasPrediction: boolean
+  isShifting: boolean
 }) {
   const xAxisMap = chartProps.xAxisMap as Record<string, { scale: (v: number) => number }> | undefined
   const yAxisMap = chartProps.yAxisMap as Record<string, { scale: (v: number) => number }> | undefined
   const offset = chartProps.offset as { left?: number; top?: number } | undefined
-
-  if (
-    !isVisible ||
-    !xAxisMap ||
-    !yAxisMap ||
-    !offset ||
-    !e0 ||
-    !e1 ||
-    (e0.y === e1.y && e0.r === e1.r)
-  ) {
-    return null
-  }
+  if (!xAxisMap || !yAxisMap || !offset || !data.length) return null
 
   const xScale = Object.values(xAxisMap)[0]?.scale
   const yScale = Object.values(yAxisMap)[0]?.scale
@@ -113,58 +112,126 @@ function PredictionArrow({
 
   const left = offset.left ?? 0
   const top = offset.top ?? 0
-  const x0 = left + xScale(e0.y)
-  const y0 = top + yScale(e0.r)
-  const x1 = left + xScale(e1.y)
-  const y1 = top + yScale(e1.r)
+  const last = data[data.length - 1]
+  const xRight = left + xScale(100)
+  const rIS = last.rIS0 ?? last.rIS
+  const rLM = last.rLM0 ?? last.rLM
+  const rBP = last.rBP0 ?? last.rBP
 
-  const len = Math.hypot(x1 - x0, y1 - y0)
-  const markerId = "arrow-marker-prediction"
-  return (
-    <g>
-      <defs>
-        <filter id="arrow-glow" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
+  const yIS = top + yScale(rIS)
+  const yLM = top + yScale(rLM)
+  const yBP = top + yScale(rBP)
+
+  const elements: JSX.Element[] = []
+
+  // 1. 右端ラベル（IS: -15px, BP: 0, LM: +15px）
+  elements.push(
+    <text
+      key="is"
+      x={xRight + LABEL_X_OFFSET}
+      y={yIS - 15}
+      fill={COLORS.is}
+      fontSize={12}
+      fontWeight="bold"
+      style={{ pointerEvents: "none" }}
+    >
+      IS
+    </text>,
+    <text
+      key="bp"
+      x={xRight + LABEL_X_OFFSET}
+      y={yBP}
+      fill={COLORS.bp}
+      fontSize={12}
+      fontWeight="bold"
+      style={{ pointerEvents: "none" }}
+    >
+      BP
+    </text>,
+    <text
+      key="lm"
+      x={xRight + LABEL_X_OFFSET}
+      y={yLM + 15}
+      fill={COLORS.lm}
+      fontSize={12}
+      fontWeight="bold"
+      style={{ pointerEvents: "none" }}
+    >
+      LM
+    </text>
+  )
+
+  // 2. 矢印（isShifting のときのみ E0→E1）
+  if (isShifting && e0 && e1 && (e0.y !== e1.y || e0.r !== e1.r)) {
+    const x0 = left + xScale(e0.y)
+    const y0 = top + yScale(e0.r)
+    const x1 = left + xScale(e1.y)
+    const y1 = top + yScale(e1.r)
+    elements.push(
+      <defs key="defs">
         <marker
-          id={markerId}
-          markerWidth={12}
-          markerHeight={12}
-          refX={10}
-          refY={6}
+          id={ARROW_MARKER_ID}
+          markerWidth={10}
+          markerHeight={10}
+          refX={9}
+          refY={5}
           orient="auto"
           markerUnits="userSpaceOnUse"
         >
-          <path
-            d="M0,0 L12,6 L0,12 Z"
-            fill={ARROW_COLOR}
-            stroke="rgba(255,255,255,0.4)"
-            strokeWidth="0.5"
-            style={{ filter: "url(#arrow-glow)" }}
-          />
+          <path d="M0,0 L10,5 L0,10 Z" fill={ARROW_COLOR} stroke="#ffffff" strokeWidth="0.5" />
         </marker>
-      </defs>
-      <motion.line
+      </defs>,
+      <line
+        key="arrow"
         x1={x0}
         y1={y0}
         x2={x1}
         y2={y1}
         stroke={ARROW_COLOR}
-        strokeWidth={2.5}
-        strokeLinecap="round"
-        strokeDasharray={len}
-        markerEnd={`url(#${markerId})`}
-        style={{ filter: "url(#arrow-glow)" }}
-        initial={{ strokeDashoffset: len, opacity: 0.6 }}
-        animate={{ strokeDashoffset: 0, opacity: 1 }}
-        transition={{ duration: 1.5, ease: "easeOut" }}
+        strokeWidth={ARROW_STROKE}
+        markerEnd={`url(#${ARROW_MARKER_ID})`}
+        style={{ pointerEvents: "none" }}
       />
-    </g>
-  )
+    )
+  }
+
+  // 3. E0 / E1 ラベル（斜め上にオフセット）
+  if (hasPrediction && e0) {
+    const x = left + xScale(e0.y)
+    const y = top + yScale(e0.r)
+    elements.push(
+      <text
+        key="e0"
+        x={x - 18}
+        y={y - 18}
+        fill={LABEL_COLOR}
+        fontSize={12}
+        fontWeight="bold"
+        style={{ pointerEvents: "none" }}
+      >
+        E₀
+      </text>
+    )
+  }
+  if (hasPrediction && e1) {
+    const x = left + xScale(e1.y)
+    const y = top + yScale(e1.r)
+    elements.push(
+      <text
+        key="e1"
+        x={x + 18}
+        y={y - 18}
+        fill={LABEL_COLOR}
+        fontSize={12}
+        fontWeight="bold"
+        style={{ pointerEvents: "none" }}
+      >
+        E₁
+      </text>
+    )
+  }
+
+  return <g>{elements}</g>
 }
 
 export function ISLMBPGraph({ shifts, isAnimating, analysisResult }: Props) {
@@ -193,7 +260,7 @@ export function ISLMBPGraph({ shifts, isAnimating, analysisResult }: Props) {
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={data}
-          margin={{ top: 40, right: 60, left: 60, bottom: 60 }}
+          margin={{ top: 40, right: 80, left: 60, bottom: 75 }}
         >
           <CartesianGrid stroke={COLORS.grid} strokeDasharray="3 3" />
           <XAxis
@@ -201,12 +268,13 @@ export function ISLMBPGraph({ shifts, isAnimating, analysisResult }: Props) {
             type="number"
             domain={[0, 100]}
             tick={{ fill: COLORS.text, fontSize: 10 }}
+            tickMargin={10}
           >
             <Label
               value="Y (Output / Income)"
               position="insideBottom"
-              offset={25}
-              dy={10}
+              offset={0}
+              dy={32}
               fill={COLORS.text}
               style={{ fontSize: 11, fontWeight: "bold" }}
             />
@@ -250,16 +318,7 @@ export function ISLMBPGraph({ shifts, isAnimating, analysisResult }: Props) {
                 strokeWidth={2.5}
                 dot={false}
                 isAnimationActive={false}
-              >
-                <Label
-                  value="BP"
-                  position="right"
-                  offset={12}
-                  dy={-10}
-                  fill={COLORS.bp}
-                  style={{ fontSize: 11, fontWeight: "bold" }}
-                />
-              </Line>
+              />
               <Line
                 type="monotone"
                 dataKey="rLM0"
@@ -268,16 +327,7 @@ export function ISLMBPGraph({ shifts, isAnimating, analysisResult }: Props) {
                 strokeWidth={2.5}
                 dot={false}
                 isAnimationActive={false}
-              >
-                <Label
-                  value="LM"
-                  position="right"
-                  offset={12}
-                  dy={-10}
-                  fill={COLORS.lm}
-                  style={{ fontSize: 11, fontWeight: "bold" }}
-                />
-              </Line>
+              />
               <Line
                 type="monotone"
                 dataKey="rIS0"
@@ -286,16 +336,7 @@ export function ISLMBPGraph({ shifts, isAnimating, analysisResult }: Props) {
                 strokeWidth={2.5}
                 dot={false}
                 isAnimationActive={false}
-              >
-                <Label
-                  value="IS"
-                  position="right"
-                  offset={12}
-                  dy={-10}
-                  fill={COLORS.is}
-                  style={{ fontSize: 11, fontWeight: "bold" }}
-                />
-              </Line>
+              />
             </>
           ) : (
             <>
@@ -307,16 +348,7 @@ export function ISLMBPGraph({ shifts, isAnimating, analysisResult }: Props) {
                 strokeWidth={2.5}
                 dot={false}
                 isAnimationActive
-              >
-                <Label
-                  value="BP"
-                  position="right"
-                  offset={12}
-                  dy={-10}
-                  fill={COLORS.bp}
-                  style={{ fontSize: 11, fontWeight: "bold" }}
-                />
-              </Line>
+              />
               <Line
                 type="monotone"
                 dataKey="rLM"
@@ -325,16 +357,7 @@ export function ISLMBPGraph({ shifts, isAnimating, analysisResult }: Props) {
                 strokeWidth={2.5}
                 dot={false}
                 isAnimationActive
-              >
-                <Label
-                  value="LM"
-                  position="right"
-                  offset={12}
-                  dy={-10}
-                  fill={COLORS.lm}
-                  style={{ fontSize: 11, fontWeight: "bold" }}
-                />
-              </Line>
+              />
               <Line
                 type="monotone"
                 dataKey="rIS"
@@ -343,16 +366,7 @@ export function ISLMBPGraph({ shifts, isAnimating, analysisResult }: Props) {
                 strokeWidth={2.5}
                 dot={false}
                 isAnimationActive
-              >
-                <Label
-                  value="IS"
-                  position="right"
-                  offset={12}
-                  dy={-10}
-                  fill={COLORS.is}
-                  style={{ fontSize: 11, fontWeight: "bold" }}
-                />
-              </Line>
+              />
             </>
           )}
 
@@ -414,14 +428,16 @@ export function ISLMBPGraph({ shifts, isAnimating, analysisResult }: Props) {
             strokeWidth={1.5}
           />
 
-          {/* 予測矢印 E0 → E1 */}
+          {/* 曲線ラベル・矢印・均衡点ラベル（Customized で SVG 直接描画） */}
           <Customized
             component={(p: Record<string, unknown>) => (
-              <PredictionArrow
-                props={p}
-                e0={e0 ?? { y: 40, r: 5 }}
+              <ChartOverlay
+                chartProps={p}
+                data={data}
+                e0={e0 ?? null}
                 e1={e1}
-                isVisible={arrowVisible}
+                hasPrediction={hasPrediction}
+                isShifting={arrowVisible}
               />
             )}
           />
@@ -444,11 +460,6 @@ export function ISLMBPGraph({ shifts, isAnimating, analysisResult }: Props) {
         </motion.div>
       )}
 
-      <div className="pointer-events-none absolute left-4 bottom-4 rounded-md border border-border/90 bg-background/90 px-3 py-1.5 shadow-sm">
-        <span className="text-[10px] font-semibold tracking-[0.18em] text-muted-foreground">
-          AI 分析 (Gemini)
-        </span>
-      </div>
     </div>
   )
 }
