@@ -15,9 +15,16 @@ import { AlertCircle } from "lucide-react"
 import type { AnalysisResult, ShiftState } from "@/lib/types"
 import "@/i18n"
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL
+if (typeof window !== "undefined") {
+  console.log("[Mundel] NEXT_PUBLIC_API_URL:", API_URL ?? "(未設定・フォールバック使用)")
+}
+
 function getApiBase(): string {
+  if (API_URL && API_URL.trim()) {
+    return API_URL.replace(/\/$/, "")
+  }
   if (typeof window === "undefined") {
-    // SSR / ビルド時はローカル想定（クライアント側で再評価される）
     return "http://localhost:8080"
   }
   const hostname = window.location.hostname
@@ -311,3 +318,4 @@ export default function MundelDashboard() {
     </div>
   )
 }
+
