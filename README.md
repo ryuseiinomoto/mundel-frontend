@@ -1,36 +1,27 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mundel Frontend 📈
 
-## Getting Started
+マクロ経済理論をリアルタイムに可視化する、経済学部生ならではの FX 分析ターミナル。
 
-First, run the development server:
+##  Concept
+「ニュースの一行が、経済モデルをどう動かすのか？」
+このプロジェクトは、マクロ経済学の「マンデル＝フレミング・モデル（IS-LM-BP）」をコードで表現し、投資判断に論理的な根拠を与えるために開発しました。
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+##  Key Features & Engineering
+- **Mundel-Fleming Model Visualization**:
+  - `Recharts` を高度にカスタマイズし、IS/LM/BP 曲線の動的なシフトを実装。
+  - **SVG Vector Drawing**: 均衡点の移動をベクトル（矢印）で描画し、経済の変化の方向性を直感的に理解できる UX を実現。
+- **Responsive Terminal UI**:
+  - `Tailwind CSS` を使用し、情報の密度が高い「プロ向けターミナル」の質感を追求。
+  - 複雑なグラフと AI インサイトを 1 画面に収める情報設計。
+- **Environment Synchronization**:
+  - 開発環境（Local/Network）における HMR や CORS の問題をクリアし、堅牢なフロントエンド構成を構築。
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+##  Tech Stack
+- **Framework**: Next.js 14 (App Router)
+- **Visualization**: Recharts, Lucide React
+- **Styling**: Tailwind CSS, Shadcn UI
+- **Language**: TypeScript
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+##  Technical Challenge: "The Ghost in the Network"
+**課題**: 開発中、特定のネットワーク経由で古いコードが配信され続けるキャッシュ問題が発生。
+**解決策**: ポートのプロセス管理（`lsof`, `kill`）の徹底と、環境変数による API URL の動的切り替えを実装。インフラレベルでのデバッグ能力を養いました。
