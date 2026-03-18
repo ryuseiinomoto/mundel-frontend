@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Activity, Zap } from "lucide-react"
+import { Activity, Zap, TrendingUp } from "lucide-react"
+import Link from "next/link"
 
 export function TerminalHeader() {
   const [time, setTime] = useState("")
@@ -42,6 +43,14 @@ export function TerminalHeader() {
           <Activity className="h-3 w-3 text-terminal-green" />
           <span>IS-LM-BP</span>
         </div>
+        <div className="h-4 w-px bg-border" />
+        <Link
+          href="/trade"
+          className="flex items-center gap-1.5 rounded border border-terminal-amber/30 bg-terminal-amber/5 px-2.5 py-1 text-[10px] tracking-wider text-terminal-amber hover:bg-terminal-amber/15 transition-colors"
+        >
+          <TrendingUp className="h-3 w-3" />
+          DEMO TRADE
+        </Link>
         <div className="h-4 w-px bg-border" />
         <div className="flex items-center gap-2 text-[11px] tabular-nums">
           <span className="text-muted-foreground">{date}</span>

@@ -2,8 +2,9 @@
 
 import { motion, AnimatePresence } from "framer-motion"
 import { useTranslation } from "react-i18next"
-import { Brain, Loader2, Sparkles, ChevronRight, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react"
+import { Brain, Loader2, Sparkles, ChevronRight, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, TrendingDown, Activity } from "lucide-react"
 import type { AnalysisResult, ShiftState } from "@/lib/types"
+import { withTooltips } from "@/components/economic-tooltip"
 
 interface MacroEffects {
   exchange_rate: string
@@ -87,6 +88,57 @@ function ShiftIndicator({
   )
 }
 
+function SignalBadge({ signal, reason }: { signal?: string; reason?: string }) {
+  if (!signal || signal === "HOLD") {
+    return (
+      <div className="flex flex-col gap-2 rounded-md border border-terminal-amber/30 bg-terminal-amber/5 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] tracking-wider text-muted-foreground">AI SIGNAL</span>
+          <span className="flex items-center gap-1.5 rounded border border-terminal-amber/40 bg-terminal-amber/10 px-2.5 py-1 text-[11px] font-bold tracking-[0.15em] text-terminal-amber">
+            <Activity className="h-3 w-3" />
+            HOLD
+          </span>
+        </div>
+        {reason && (
+          <p className="text-[11px] leading-relaxed text-muted-foreground/70">{reason}</p>
+        )}
+      </div>
+    )
+  }
+
+  if (signal === "BUY") {
+    return (
+      <div className="flex flex-col gap-2 rounded-md border border-terminal-green/40 bg-terminal-green/5 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] tracking-wider text-muted-foreground">AI SIGNAL</span>
+          <span className="flex items-center gap-1.5 rounded border border-terminal-green/50 bg-terminal-green/15 px-2.5 py-1 text-[12px] font-bold tracking-[0.15em] text-terminal-green">
+            <TrendingUp className="h-3.5 w-3.5" />
+            BUY USD/JPY
+          </span>
+        </div>
+        {reason && (
+          <p className="text-[11px] leading-relaxed text-terminal-green/80">{reason}</p>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-2 rounded-md border border-terminal-red/40 bg-terminal-red/5 px-4 py-3">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] tracking-wider text-muted-foreground">AI SIGNAL</span>
+        <span className="flex items-center gap-1.5 rounded border border-terminal-red/50 bg-terminal-red/15 px-2.5 py-1 text-[12px] font-bold tracking-[0.15em] text-terminal-red">
+          <TrendingDown className="h-3.5 w-3.5" />
+          SELL USD/JPY
+        </span>
+      </div>
+      {reason && (
+        <p className="text-[11px] leading-relaxed text-terminal-red/80">{reason}</p>
+      )}
+    </div>
+  )
+}
+
 export function AIAnalysisPanel({ result, shifts, macroEffects, isLoading }: Props) {
   const { t } = useTranslation()
   const me = macroEffects ?? {
@@ -149,6 +201,9 @@ export function AIAnalysisPanel({ result, shifts, macroEffects, isLoading }: Pro
             >
               {result && (
                 <>
+                  {/* AI Signal Badge */}
+                  <SignalBadge signal={result.signal} reason={result.signal_reason} />
+
                   {/* Curve Shifts Summary */}
                   <section className="rounded-md border border-border bg-secondary/20 p-4">
                     <div className="mb-3 flex items-center gap-2">
@@ -211,7 +266,7 @@ export function AIAnalysisPanel({ result, shifts, macroEffects, isLoading }: Pro
                       </span>
                     </div>
                     <p className="text-[13px] leading-[1.85] text-foreground/90">
-                      {result.logic_jp ?? result.explanation}
+                      {withTooltips(result.logic_jp ?? result.explanation ?? "")}
                     </p>
                     {result.summary && (
                       <div className="mt-5 border-t border-border/40 pt-4">

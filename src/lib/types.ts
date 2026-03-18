@@ -38,6 +38,8 @@ export interface AnalysisResult {
   output_effect?: string
   capital_flow?: string
   summary?: string
+  signal?: "BUY" | "SELL" | "HOLD"
+  signal_reason?: string
   [key: string]: unknown
 }
 
