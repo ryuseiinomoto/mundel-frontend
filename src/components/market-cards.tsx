@@ -19,57 +19,35 @@ const item = {
   show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
 }
 
-function Card({
-  label,
-  value,
-  icon: Icon,
-  accentClass,
-}: {
-  label: string
-  value: string
-  icon: React.ComponentType<{ className?: string }>
-  accentClass: string
-}) {
-  return (
-    <motion.div
-      variants={item}
-      className="flex flex-col gap-1.5 rounded border border-border bg-background/60 px-3 py-2.5"
-    >
-      <div className="flex items-center gap-1.5">
-        <Icon className={`h-3 w-3 ${accentClass}`} />
-        <span className="text-[9px] tracking-[0.15em] text-muted-foreground">{label}</span>
-      </div>
-      <span className={`text-lg font-bold tabular-nums leading-none ${accentClass}`}>
-        {value}
-      </span>
-    </motion.div>
-  )
-}
+const CARDS = [
+  {
+    label: "USD/JPY",
+    icon: DollarSign,
+    color: "rgba(0,255,128,0.8)",
+    borderColor: "rgba(0,255,128,0.15)",
+    bgColor: "rgba(0,255,128,0.04)",
+  },
+  {
+    label: "US INTEREST RATE",
+    icon: Percent,
+    color: "rgba(220,180,60,0.9)",
+    borderColor: "rgba(220,180,60,0.15)",
+    bgColor: "rgba(220,180,60,0.04)",
+  },
+  {
+    label: "CPI (YoY)",
+    icon: BarChart3,
+    color: "rgba(0,210,230,0.8)",
+    borderColor: "rgba(0,210,230,0.15)",
+    bgColor: "rgba(0,210,230,0.04)",
+  },
+]
 
 export function MarketCards({ fxRate, usInterestRate, cpi }: Props) {
   const format = (v: number | string | undefined) =>
     v == null || v === "" ? "---" : typeof v === "number" ? v.toFixed(2) : String(v)
 
-  const cards = [
-    {
-      label: "USD/JPY",
-      value: format(fxRate),
-      icon: DollarSign,
-      accentClass: "text-terminal-green",
-    },
-    {
-      label: "US INTEREST RATE",
-      value: format(usInterestRate),
-      icon: Percent,
-      accentClass: "text-terminal-amber",
-    },
-    {
-      label: "CPI (YoY)",
-      value: format(cpi),
-      icon: BarChart3,
-      accentClass: "text-terminal-cyan",
-    },
-  ]
+  const values = [format(fxRate), format(usInterestRate), format(cpi)]
 
   return (
     <motion.div
@@ -78,9 +56,30 @@ export function MarketCards({ fxRate, usInterestRate, cpi }: Props) {
       animate="show"
       className="grid grid-cols-3 gap-2"
     >
-      {cards.map((c) => (
-        <Card key={c.label} {...c} />
-      ))}
+      {CARDS.map((card, i) => {
+        const Icon = card.icon
+        return (
+          <motion.div
+            key={card.label}
+            variants={item}
+            className="flex flex-col gap-1.5 rounded-xl px-3 py-2.5"
+            style={{
+              border: `1px solid ${card.borderColor}`,
+              background: card.bgColor,
+            }}
+          >
+            <div className="flex items-center gap-1.5">
+              <Icon className="h-3 w-3" style={{ color: card.color }} />
+              <span className="text-[9px] tracking-[0.12em]" style={{ color: "rgba(255,255,255,0.3)" }}>
+                {card.label}
+              </span>
+            </div>
+            <span className="text-lg font-bold tabular-nums leading-none" style={{ color: card.color }}>
+              {values[i]}
+            </span>
+          </motion.div>
+        )
+      })}
     </motion.div>
   )
 }

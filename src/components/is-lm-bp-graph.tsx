@@ -46,6 +46,21 @@ interface Props {
   analysisResult?: AnalysisResult | null
 }
 
+const CURVE_TOOLTIPS: Record<string, string> = {
+  IS: "財市場の均衡（投資＝貯蓄）。右シフト → 財政拡張・輸出増加。左シフト → 財政緊縮・輸入増加。",
+  LM: "貨幣市場の均衡（流動性選好＝貨幣供給）。左シフト → 金融引き締め・利上げ。右シフト → 金融緩和・利下げ。",
+  BP: "国際収支の均衡。上シフト → 資本流入（円高方向）。下シフト → 資本流出（円安方向）。",
+  "E₀": "現在の均衡点（産出量Y、金利r）。ニュース入力前の状態。",
+  "E₁": "ニュース分析後の予測均衡点。曲線シフトにより移動した新しい均衡。",
+}
+
+interface TooltipState {
+  label: string
+  desc: string
+  x: number
+  y: number
+}
+
 type Point = {
   y: number
   rIS: number
@@ -93,6 +108,7 @@ function ChartOverlay({
   e1,
   hasPrediction,
   isShifting,
+  onHover,
 }: {
   chartProps: Record<string, unknown>
   data: { y: number; rIS: number; rLM: number; rBP: number; rIS0?: number; rLM0?: number; rBP0?: number }[]
@@ -100,6 +116,7 @@ function ChartOverlay({
   e1: { y: number; r: number }
   hasPrediction: boolean
   isShifting: boolean
+  onHover: (t: TooltipState | null) => void
 }) {
   const xAxisMap = chartProps.xAxisMap as Record<string, { scale: (v: number) => number }> | undefined
   const yAxisMap = chartProps.yAxisMap as Record<string, { scale: (v: number) => number }> | undefined
@@ -125,41 +142,28 @@ function ChartOverlay({
   const elements: JSX.Element[] = []
 
   // 1. 右端ラベル（IS: -15px, BP: 0, LM: +15px）
-  elements.push(
-    <text
-      key="is"
-      x={xRight + LABEL_X_OFFSET}
-      y={yIS - 15}
-      fill={COLORS.is}
-      fontSize={12}
-      fontWeight="bold"
-      style={{ pointerEvents: "none" }}
-    >
-      IS
-    </text>,
-    <text
-      key="bp"
-      x={xRight + LABEL_X_OFFSET}
-      y={yBP}
-      fill={COLORS.bp}
-      fontSize={12}
-      fontWeight="bold"
-      style={{ pointerEvents: "none" }}
-    >
-      BP
-    </text>,
-    <text
-      key="lm"
-      x={xRight + LABEL_X_OFFSET}
-      y={yLM + 15}
-      fill={COLORS.lm}
-      fontSize={12}
-      fontWeight="bold"
-      style={{ pointerEvents: "none" }}
-    >
-      LM
-    </text>
-  )
+  const curveLabels: { key: string; x: number; y: number; fill: string }[] = [
+    { key: "IS", x: xRight + LABEL_X_OFFSET, y: yIS - 15, fill: COLORS.is },
+    { key: "BP", x: xRight + LABEL_X_OFFSET, y: yBP,      fill: COLORS.bp },
+    { key: "LM", x: xRight + LABEL_X_OFFSET, y: yLM + 15, fill: COLORS.lm },
+  ]
+  curveLabels.forEach(({ key, x, y, fill }) => {
+    elements.push(
+      <text
+        key={key}
+        x={x}
+        y={y}
+        fill={fill}
+        fontSize={12}
+        fontWeight="bold"
+        style={{ pointerEvents: "all", cursor: "pointer" }}
+        onMouseEnter={() => onHover({ label: key, desc: CURVE_TOOLTIPS[key] ?? "", x, y })}
+        onMouseLeave={() => onHover(null)}
+      >
+        {key}
+      </text>
+    )
+  })
 
   // 2. 矢印（isShifting のときのみ E0→E1）
   if (isShifting && e0 && e1 && (e0.y !== e1.y || e0.r !== e1.r)) {
@@ -207,7 +211,9 @@ function ChartOverlay({
         fill={LABEL_COLOR}
         fontSize={12}
         fontWeight="bold"
-        style={{ pointerEvents: "none" }}
+        style={{ pointerEvents: "all", cursor: "pointer" }}
+        onMouseEnter={() => onHover({ label: "E₀", desc: CURVE_TOOLTIPS["E₀"] ?? "", x: x - 18, y: y - 18 })}
+        onMouseLeave={() => onHover(null)}
       >
         E₀
       </text>
@@ -224,7 +230,9 @@ function ChartOverlay({
         fill={LABEL_COLOR}
         fontSize={12}
         fontWeight="bold"
-        style={{ pointerEvents: "none" }}
+        style={{ pointerEvents: "all", cursor: "pointer" }}
+        onMouseEnter={() => onHover({ label: "E₁", desc: CURVE_TOOLTIPS["E₁"] ?? "", x: x + 18, y: y - 18 })}
+        onMouseLeave={() => onHover(null)}
       >
         E₁
       </text>
@@ -243,6 +251,8 @@ export function ISLMBPGraph({ shifts, isAnimating, analysisResult }: Props) {
   )
 
   const [arrowVisible, setArrowVisible] = useState(false)
+  const [tooltip, setTooltip] = useState<TooltipState | null>(null)
+
   useEffect(() => {
     if (hasPrediction && !isAnimating) {
       const t = setTimeout(() => setArrowVisible(true), 100)
@@ -438,11 +448,23 @@ export function ISLMBPGraph({ shifts, isAnimating, analysisResult }: Props) {
                 e1={e1}
                 hasPrediction={hasPrediction}
                 isShifting={arrowVisible}
+                onHover={setTooltip}
               />
             )}
           />
         </LineChart>
       </ResponsiveContainer>
+
+      {/* ホバーツールチップ */}
+      {tooltip && (
+        <div
+          className="pointer-events-none absolute z-20 max-w-[220px] rounded-lg border border-white/10 bg-[#0d1117]/95 px-3 py-2 shadow-xl"
+          style={{ left: tooltip.x + 12, top: Math.max(4, tooltip.y - 50) }}
+        >
+          <p className="mb-1 text-[10px] font-bold tracking-wider text-white/90">{tooltip.label}</p>
+          <p className="text-[10px] leading-relaxed text-white/55">{tooltip.desc}</p>
+        </div>
+      )}
 
       {isAnimating && (
         <motion.div

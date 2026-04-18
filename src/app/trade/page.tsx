@@ -140,13 +140,13 @@ function ChartTooltip({ active, payload }: { active?: boolean; payload?: { paylo
   const d = payload[0].payload
   const isUp = d.close >= d.open
   return (
-    <div className="rounded border border-border bg-card px-3 py-2 text-[11px]">
-      <div className="mb-1 text-muted-foreground">{d.date}</div>
+    <div className="rounded-xl px-3 py-2 text-[11px]" style={{ border: "1px solid rgba(255,255,255,0.08)", background: "rgba(5,14,28,0.95)" }}>
+      <div className="mb-1 text-white/30">{d.date}</div>
       <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
-        <span className="text-muted-foreground">O</span><span>{d.open.toFixed(3)}</span>
-        <span className="text-muted-foreground">H</span><span className="text-terminal-red">{d.high.toFixed(3)}</span>
-        <span className="text-muted-foreground">L</span><span className="text-terminal-green">{d.low.toFixed(3)}</span>
-        <span className="text-muted-foreground">C</span>
+        <span className="text-white/35">O</span><span>{d.open.toFixed(3)}</span>
+        <span className="text-white/35">H</span><span className="text-terminal-red">{d.high.toFixed(3)}</span>
+        <span className="text-white/35">L</span><span className="text-terminal-green">{d.low.toFixed(3)}</span>
+        <span className="text-white/35">C</span>
         <span className={isUp ? "font-bold text-terminal-red" : "font-bold text-terminal-green"}>{d.close.toFixed(3)}</span>
       </div>
     </div>
@@ -172,7 +172,7 @@ function LivePriceTicker({ price, prevPrice }: { price: number; prevPrice: numbe
       >
         {price.toFixed(3)}
       </motion.span>
-      <span className="text-[10px] text-muted-foreground">JPY</span>
+      <span className="text-[10px] text-white/30">JPY</span>
       <motion.span
         key={`diff-${price.toFixed(3)}`}
         initial={{ opacity: 0, y: up ? 4 : -4 }}
@@ -197,11 +197,16 @@ export default function TradePage() {
   const [livePrice, setLivePrice] = useState<number>(0)       // シミュレーション中のライブ価格
   const [prevLivePrice, setPrevLivePrice] = useState<number>(0)
   const [tradeState, setTradeState] = useState<TradeState | null>(null)
+  // フロントエンドで残高・エントリー価格を管理（バックエンドのキャッシュ価格に依存しない）
+  const [localBalance, setLocalBalance] = useState<number | null>(null)
+  const [localEntries, setLocalEntries] = useState<Record<string, number>>({}) // posId → entry_price at open
   const [quantity, setQuantity] = useState<string>("100")
   const [isLoadingChart, setIsLoadingChart] = useState(true)
   const [isLoadingTrade, setIsLoadingTrade] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
+  const [tradeFeedback, setTradeFeedback] = useState<{ pnl: number; feedback: string } | null>(null)
+  const [isFeedbackLoading, setIsFeedbackLoading] = useState(false)
   const [chartDimensions, setChartDimensions] = useState({ height: 300, yMin: 140, yMax: 165 })
   const [chartCandles, setChartCandles] = useState<Candle[]>([])  // ライブローソク足付き
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
@@ -266,6 +271,13 @@ export default function TradePage() {
     fetchChart()
     fetchTradeState()
   }, [fetchChart, fetchTradeState])
+
+  // API から残高を初期化（初回のみ）
+  useEffect(() => {
+    if (tradeState && localBalance === null) {
+      setLocalBalance(tradeState.balance)
+    }
+  }, [tradeState, localBalance])
 
   // -------------------------------------------------------------------
   // 60秒ごとにチャート自動更新 + カウントダウン
@@ -344,12 +356,19 @@ export default function TradePage() {
       const res = await fetch(`${apiBase}/api/trade`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, quantity: qty }),
+        body: JSON.stringify({ action, quantity: qty, entry_price: livePrice }),
       })
       const data = await res.json()
       if (!res.ok) {
         setError(data.detail ?? "トレードに失敗しました")
       } else {
+        // フロントで残高を即時更新（バックエンドのキャッシュ価格に依存しない）
+        setLocalBalance((prev) => (prev ?? 10000) - qty)
+        // エントリー価格を livePrice で記録
+        const posId: string = data.position?.id
+        if (posId) {
+          setLocalEntries((prev) => ({ ...prev, [posId]: livePrice }))
+        }
         setSuccessMsg(data.message)
         await fetchTradeState()
       }
@@ -360,19 +379,46 @@ export default function TradePage() {
     }
   }
 
-  const handleClose = async (posId: string) => {
+  const handleClose = async (posId: string, pos: Position) => {
     setIsLoadingTrade(true)
     setError(null)
     setSuccessMsg(null)
+    setTradeFeedback(null)
     try {
-      const res = await fetch(`${apiBase}/api/trade/${posId}`, { method: "DELETE" })
+      const res = await fetch(`${apiBase}/api/trade/${posId}?close_price=${livePrice}`, { method: "DELETE" })
       const data = await res.json()
       if (!res.ok) {
         setError(data.detail ?? "クローズに失敗しました")
       } else {
-        const s = data.pnl >= 0 ? "+" : ""
-        setSuccessMsg(`${data.message}（損益: ${s}$${data.pnl.toFixed(2)}）`)
+        // フロントで PnL を計算（バックエンドのキャッシュ価格に依存しない）
+        const entryPrice = localEntries[posId] ?? pos.entry_price
+        const closePnl = pos.action === "BUY"
+          ? (livePrice - entryPrice) * pos.quantity / entryPrice
+          : (entryPrice - livePrice) * pos.quantity / entryPrice
+        setLocalBalance((prev) => (prev ?? 10000) + pos.quantity + closePnl)
+        setLocalEntries((prev) => { const next = { ...prev }; delete next[posId]; return next })
+        const s = closePnl >= 0 ? "+" : ""
+        const newBal = (localBalance ?? 10000) + pos.quantity + closePnl
+        setSuccessMsg(`クローズ完了（損益: ${s}$${closePnl.toFixed(2)} → 残高: $${newBal.toFixed(2)}）`)
         await fetchTradeState()
+
+        // AI学習フィードバックを非同期で取得
+        setIsFeedbackLoading(true)
+        const closePrice: number = data.close_price ?? livePrice
+        const direction = data.pnl >= 0 ? "利益" : "損失"
+        const prompt = `USD/JPYの模擬トレードで${pos.action}ポジションをエントリー価格${pos.entry_price.toFixed(3)}円で建て、${closePrice.toFixed(3)}円でクローズしました。結果は${s}$${data.pnl.toFixed(2)}の${direction}でした。このトレード結果から、FXを学んでいる初心者がマクロ経済・IS-LM-BPモデルの観点で学べることを日本語で3〜4文で教えてください。`
+        try {
+          const chatRes = await fetch(`${apiBase}/api/chat`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: prompt }),
+          })
+          if (chatRes.ok) {
+            const chatData = await chatRes.json()
+            setTradeFeedback({ pnl: data.pnl, feedback: chatData.answer ?? "" })
+          }
+        } catch { /* フィードバック取得失敗は無視 */ }
+        finally { setIsFeedbackLoading(false) }
       }
     } catch {
       setError("通信エラーが発生しました")
@@ -460,6 +506,8 @@ export default function TradePage() {
   const handleReset = async () => {
     if (!confirm("トレード履歴をリセットしますか？残高が$10,000に戻ります。")) return
     await fetch(`${apiBase}/api/trade/reset`, { method: "POST" })
+    setLocalBalance(10000)
+    setLocalEntries({})
     setSuccessMsg("リセットしました")
     await fetchTradeState()
   }
@@ -472,39 +520,46 @@ export default function TradePage() {
   // ポジションの含み損益をライブ価格で再計算
   const positionsWithLivePnl = (tradeState?.positions ?? []).map((pos) => {
     const price = livePrice || pos.current_price
+    // localEntries に記録された livePrice 時点のエントリー価格を優先
+    const entry = localEntries[pos.id] ?? pos.entry_price
     const pnl = pos.action === "BUY"
-      ? (price - pos.entry_price) * pos.quantity / pos.entry_price
-      : (pos.entry_price - price) * pos.quantity / pos.entry_price
-    return { ...pos, current_price: price, pnl: Math.round(pnl * 100) / 100 }
+      ? (price - entry) * pos.quantity / entry
+      : (entry - price) * pos.quantity / entry
+    return { ...pos, entry_price: entry, current_price: price, pnl: Math.round(pnl * 100) / 100 }
   })
   const totalPnl = positionsWithLivePnl.reduce((s, p) => s + p.pnl, 0)
 
   return (
-    <div className="flex h-screen flex-col bg-background font-mono text-foreground">
+    <div className="flex h-screen flex-col font-mono" style={{ background: ["radial-gradient(ellipse 60% 50% at 15% 60%, rgba(0,140,200,0.08) 0%, transparent 55%)","radial-gradient(ellipse 50% 40% at 85% 20%, rgba(180,130,20,0.07) 0%, transparent 50%)","#071e30"].join(", ") }}>
+      {/* 上部ライン */}
+      <div className="absolute inset-x-0 top-0 h-px z-10" style={{
+        background: "linear-gradient(90deg, transparent, rgba(0,160,220,0.5), rgba(180,130,30,0.3), transparent)",
+      }} />
+
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border bg-card/80 px-5 py-2">
+      <div className="relative flex items-center justify-between border-b border-white/6 px-5 py-2" style={{ background: "rgba(5,14,28,0.92)" }}>
         <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-foreground">
+          <Link href="/" className="flex items-center gap-1.5 text-white/25 transition-colors hover:text-white/50">
             <ArrowLeft className="h-3.5 w-3.5" />
             <span className="text-[11px] tracking-wider">BACK</span>
           </Link>
-          <span className="text-muted-foreground/40">|</span>
+          <span className="text-white/15">|</span>
           <Zap className="h-4 w-4 text-terminal-green" />
           <span className="text-[13px] font-bold tracking-[0.2em] text-terminal-green">MUNDEL</span>
-          <span className="text-[11px] tracking-wider text-muted-foreground">DEMO TRADE // USD/JPY 5M</span>
+          <span className="text-[11px] tracking-wider" style={{ color: "rgba(255,255,255,0.72)" }}>PAPER TRADE // USD/JPY 5M</span>
         </div>
         <div className="flex items-center gap-4">
           {/* Live price in header */}
           {livePrice > 0 && (
             <LivePriceTicker price={livePrice} prevPrice={prevLivePrice} />
           )}
-          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
+          <div className="flex items-center gap-1.5 text-[10px] text-white/25">
             <RefreshCw className={`h-2.5 w-2.5 ${isLoadingChart ? "animate-spin text-terminal-amber" : ""}`} />
             <span>{countdown}s</span>
           </div>
           <button
             onClick={() => { fetchChart(); fetchTradeState() }}
-            className="flex items-center gap-1.5 rounded border border-border px-2.5 py-1 text-[10px] text-muted-foreground transition-colors hover:border-terminal-cyan hover:text-terminal-cyan"
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] transition-colors" style={{ border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.75)" }}
           >
             <RefreshCw className="h-3 w-3" />
             REFRESH
@@ -515,29 +570,29 @@ export default function TradePage() {
       {/* Main */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Chart + Trade Form */}
-        <div className="flex w-[65%] flex-col border-r border-border">
+        <div className="flex w-[65%] flex-col border-r border-white/6">
           {/* Chart area */}
           <div className="flex flex-1 flex-col">
             {/* Chart header */}
-            <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-1.5">
+            <div className="flex shrink-0 items-center justify-between border-b border-white/6 px-4 py-1.5" style={{ background: "rgba(5,14,28,0.5)" }}>
               <div className="flex items-center gap-3">
-                <span className="text-[10px] font-bold tracking-[0.2em] text-muted-foreground">USD/JPY</span>
+                <span className="text-[10px] font-bold tracking-[0.2em] text-white/30">USD/JPY</span>
                 <span className="rounded bg-terminal-amber/10 px-1.5 py-0.5 text-[9px] font-bold text-terminal-amber">5M</span>
                 {lastRefresh && (
-                  <span className="text-[9px] text-muted-foreground/40">
+                  <span className="text-[9px] text-white/20">
                     更新: {lastRefresh.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                   </span>
                 )}
               </div>
               {/* Chart legend */}
               <div className="flex items-center gap-4">
-                <span className="flex items-center gap-1 text-[9px] text-muted-foreground">
+                <span className="flex items-center gap-1 text-[9px] text-white/30">
                   <span className="inline-block h-2 w-3 rounded-sm bg-terminal-red/80" />赤=陽線
                 </span>
-                <span className="flex items-center gap-1 text-[9px] text-muted-foreground">
+                <span className="flex items-center gap-1 text-[9px] text-white/30">
                   <span className="inline-block h-2 w-3 rounded-sm bg-terminal-green/80" />緑=陰線
                 </span>
-                <span className="flex items-center gap-1 text-[9px] text-muted-foreground">
+                <span className="flex items-center gap-1 text-[9px] text-white/30">
                   <span className="inline-block w-4 border-t border-dashed border-terminal-amber" />現在値
                 </span>
               </div>
@@ -548,18 +603,18 @@ export default function TradePage() {
               {chartCandles.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={chartCandles} margin={{ top: 4, right: 56, left: 0, bottom: 4 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1f1f1f" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
                     <XAxis
                       dataKey="date"
                       tickFormatter={(v: string) => v.slice(-5)}
-                      tick={{ fill: "#525252", fontSize: 8 }}
+                      tick={{ fill: "rgba(255,255,255,0.68)", fontSize: 8 }}
                       tickLine={false}
-                      axisLine={{ stroke: "#262626" }}
+                      axisLine={{ stroke: "rgba(255,255,255,0.06)" }}
                       interval={Math.max(1, Math.floor(chartCandles.length / 8))}
                     />
                     <YAxis
                       domain={[chartDimensions.yMin, chartDimensions.yMax]}
-                      tick={{ fill: "#525252", fontSize: 8 }}
+                      tick={{ fill: "rgba(255,255,255,0.68)", fontSize: 8 }}
                       tickLine={false}
                       axisLine={false}
                       width={46}
@@ -623,29 +678,34 @@ export default function TradePage() {
           </div>
 
           {/* Trade Form */}
-          <div className="shrink-0 border-t border-border bg-card/30 px-5 py-3">
+          <div className="shrink-0 border-t border-white/6 px-5 py-3" style={{ background: "rgba(5,14,28,0.6)" }}>
             <div className="flex items-end gap-3 flex-wrap">
               {/* Quantity */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] tracking-wider text-muted-foreground">数量 (USD)</label>
+                <label className="text-[9px] tracking-wider" style={{ color: "rgba(255,255,255,0.60)" }}>
+                  取引金額（ドル）
+                </label>
                 <input
                   type="number"
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
                   min="1"
-                  className="w-28 rounded border border-border bg-background px-3 py-1.5 text-[12px] font-mono text-foreground outline-none focus:border-terminal-cyan"
+                  className="w-28 rounded-lg px-3 py-1.5 text-[12px] font-mono outline-none transition-colors" style={{ border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.8)" }}
                 />
+                <span className="text-[9px]" style={{ color: "rgba(255,255,255,0.35)" }}>
+                  例：100 = 100ドル分を売買
+                </span>
               </div>
 
               {/* Quick amounts */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[9px] tracking-wider text-muted-foreground">クイック選択</label>
+                <label className="text-[9px] tracking-wider text-white/30">クイック選択</label>
                 <div className="flex gap-1.5">
                   {[100, 500, 1000].map((v) => (
                     <button
                       key={v}
                       onClick={() => setQuantity(String(v))}
-                      className="rounded border border-border px-2 py-1.5 text-[10px] text-muted-foreground transition-colors hover:border-terminal-cyan hover:text-terminal-cyan"
+                      className="rounded-lg px-2 py-1.5 text-[10px] transition-colors" style={{ border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.75)" }}
                     >
                       ${v}
                     </button>
@@ -699,7 +759,7 @@ export default function TradePage() {
                     </motion.button>
                   </div>
                 </div>
-                <div className="flex gap-2 text-[9px] text-muted-foreground/50">
+                <div className="flex gap-2 text-[9px] text-white/25">
                   <span className="w-[76px] text-center">円安予想のとき</span>
                   <span className="w-[76px] text-center">円高予想のとき</span>
                 </div>
@@ -708,7 +768,7 @@ export default function TradePage() {
               {/* Current price */}
               {livePrice > 0 && (
                 <div className="ml-auto flex flex-col items-end gap-0.5">
-                  <span className="text-[9px] tracking-wider text-muted-foreground">EXECUTE PRICE</span>
+                  <span className="text-[9px] tracking-wider text-white/30">EXECUTE PRICE</span>
                   <span className={`text-[15px] font-bold tabular-nums ${livePrice >= prevLivePrice ? "text-terminal-green" : "text-terminal-red"}`}>
                     {livePrice.toFixed(3)}
                   </span>
@@ -716,17 +776,65 @@ export default function TradePage() {
               )}
             </div>
 
+            {/* P&L Simulation preview */}
+            {livePrice > 0 && parseFloat(quantity) > 0 && (
+              <div className="mt-2 flex items-center gap-3 rounded-lg px-3 py-1.5 flex-wrap"
+                style={{ border: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)" }}
+              >
+                <span className="text-[9px] tracking-wider text-white/25">シミュレーション</span>
+                <span className="text-[9px] text-white/30">
+                  1pip動くと
+                  <span className="ml-1 font-bold tabular-nums text-terminal-amber">
+                    ±${(0.01 * parseFloat(quantity) / livePrice).toFixed(3)}
+                  </span>
+                </span>
+                <span className="text-[9px] text-white/30">
+                  +1%上昇なら
+                  <span className="ml-1 font-bold tabular-nums text-terminal-green">
+                    +${(0.01 * parseFloat(quantity)).toFixed(2)}
+                  </span>
+                </span>
+                <span className="text-[9px] text-white/30">
+                  -1%下落なら
+                  <span className="ml-1 font-bold tabular-nums text-terminal-red">
+                    -${(0.01 * parseFloat(quantity)).toFixed(2)}
+                  </span>
+                </span>
+              </div>
+            )}
+
             {/* Messages */}
             <AnimatePresence>
               {error && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                  className="mt-2 rounded border border-terminal-red/30 bg-terminal-red/5 px-3 py-1.5 text-[11px] text-terminal-red"
+                  className="mt-2 rounded-xl px-3 py-1.5 text-[11px]" style={{ border: "1px solid rgba(239,68,68,0.25)", background: "rgba(239,68,68,0.06)", color: "rgba(239,68,68,0.9)" }}
                 >{error}</motion.div>
               )}
               {successMsg && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                  className="mt-2 rounded border border-terminal-green/30 bg-terminal-green/5 px-3 py-1.5 text-[11px] text-terminal-green"
+                  className="mt-2 rounded-xl px-3 py-1.5 text-[11px]" style={{ border: "1px solid rgba(0,255,128,0.2)", background: "rgba(0,255,128,0.05)", color: "rgba(0,255,128,0.9)" }}
                 >{successMsg}</motion.div>
+              )}
+              {(isFeedbackLoading || tradeFeedback) && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mt-2 rounded border border-terminal-cyan/20 bg-terminal-cyan/[0.04] p-3"
+                >
+                  <div className="mb-1.5 flex items-center gap-1.5">
+                    {isFeedbackLoading
+                      ? <Loader2 className="h-3 w-3 animate-spin text-terminal-cyan" />
+                      : <Brain className="h-3 w-3 text-terminal-cyan" />
+                    }
+                    <span className="text-[9px] font-bold tracking-wider text-terminal-cyan">
+                      {isFeedbackLoading ? "AIが分析中..." : "このトレードから学べること"}
+                    </span>
+                  </div>
+                  {tradeFeedback && (
+                    <p className="text-[11px] leading-relaxed text-white/70">{tradeFeedback.feedback}</p>
+                  )}
+                </motion.div>
               )}
             </AnimatePresence>
           </div>
@@ -735,17 +843,17 @@ export default function TradePage() {
         {/* Right: Account + Positions */}
         <div className="flex w-[35%] flex-col overflow-hidden">
           {/* Account summary */}
-          <div className="shrink-0 border-b border-border bg-card/40 px-5 py-3">
-            <div className="mb-2 text-[9px] tracking-[0.15em] text-muted-foreground">DEMO ACCOUNT</div>
+          <div className="shrink-0 border-b border-white/6 px-5 py-3" style={{ background: "rgba(5,14,28,0.7)" }}>
+            <div className="mb-2 text-[9px] tracking-[0.15em]" style={{ color: "rgba(255,255,255,0.75)" }}>DEMO ACCOUNT</div>
             <div className="flex items-end justify-between">
               <div>
-                <div className="mb-0.5 text-[9px] text-muted-foreground">利用可能残高</div>
+                <div className="mb-0.5 text-[9px] text-white/30">利用可能残高</div>
                 <div className="text-[20px] font-bold text-terminal-green">
-                  ${(tradeState?.balance ?? 10000).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${(localBalance ?? tradeState?.balance ?? 10000).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
               </div>
               <div className="text-right">
-                <div className="mb-0.5 text-[9px] text-muted-foreground">含み損益 (LIVE)</div>
+                <div className="mb-0.5 text-[9px] text-white/30">含み損益 (LIVE)</div>
                 <motion.div
                   key={totalPnl.toFixed(2)}
                   initial={{ scale: 1.05 }}
@@ -757,11 +865,11 @@ export default function TradePage() {
               </div>
             </div>
             <div className="mt-2 flex items-center justify-between">
-              <span className="text-[9px] text-muted-foreground">
-                ポジション: <span className="text-foreground">{positionsWithLivePnl.length}</span>
+              <span className="text-[9px] text-white/30">
+                ポジション: <span className="text-white/80">{positionsWithLivePnl.length}</span>
               </span>
               <button onClick={handleReset}
-                className="flex items-center gap-1.5 rounded border border-border px-2 py-1 text-[9px] text-muted-foreground transition-colors hover:border-terminal-amber hover:text-terminal-amber"
+                className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-[9px] transition-colors" style={{ border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.75)" }}
               >
                 <RotateCcw className="h-2.5 w-2.5" />RESET
               </button>
@@ -769,9 +877,9 @@ export default function TradePage() {
           </div>
 
           {/* AI ADVISOR — core feature */}
-          <div className="flex flex-1 flex-col overflow-hidden border-b border-border">
+          <div className="flex flex-1 flex-col overflow-hidden border-b border-white/6">
             {/* Prominent header */}
-            <div className="shrink-0 border-b border-terminal-cyan/20 bg-terminal-cyan/5 px-4 py-2.5">
+            <div className="shrink-0 border-b border-white/6 px-4 py-2.5" style={{ background: "rgba(0,180,216,0.06)" }}>
               <div className="flex items-center gap-2">
                 <motion.div
                   animate={{ rotate: [0, 360] }}
@@ -797,13 +905,13 @@ export default function TradePage() {
             </div>
 
             {/* Mode tabs */}
-            <div className="shrink-0 flex border-b border-border">
+            <div className="shrink-0 flex border-b border-white/6">
               <button
                 onClick={() => setChatMode("analysis")}
                 className={`flex flex-1 items-center justify-center gap-1.5 py-2 text-[10px] font-bold tracking-wider transition-colors ${
                   chatMode === "analysis"
                     ? "border-b-2 border-terminal-cyan text-terminal-cyan"
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-white/30 hover:text-white/80"
                 }`}
               >
                 <Newspaper className="h-3 w-3" />
@@ -814,7 +922,7 @@ export default function TradePage() {
                 className={`flex flex-1 items-center justify-center gap-1.5 py-2 text-[10px] font-bold tracking-wider transition-colors ${
                   chatMode === "chat"
                     ? "border-b-2 border-terminal-cyan text-terminal-cyan"
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-white/30 hover:text-white/80"
                 }`}
               >
                 <MessageCircle className="h-3 w-3" />
@@ -823,19 +931,19 @@ export default function TradePage() {
             </div>
 
             {/* Chat messages area */}
-            <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+            <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2" style={{ background: "rgba(5,14,28,0.3)" }}>
               {(chatMode === "analysis" ? analysisMessages : fxMessages).length === 0 && (
                 <div className="flex h-full flex-col items-center justify-center gap-2 py-6 text-center">
                   <Bot className="h-8 w-8 text-terminal-cyan/20" />
                   {chatMode === "analysis" ? (
                     <>
-                      <p className="text-[10px] text-muted-foreground/50">ニュースや経済指標を入力してください</p>
-                      <p className="text-[9px] text-muted-foreground/30">例: FRBが0.25%の利上げを決定</p>
+                      <p className="text-[10px] text-white/25">ニュースや経済指標を入力してください</p>
+                      <p className="text-[9px] text-white/20">例: FRBが0.25%の利上げを決定</p>
                     </>
                   ) : (
                     <>
-                      <p className="text-[10px] text-muted-foreground/50">FXについて何でも聞いてください</p>
-                      <p className="text-[9px] text-muted-foreground/30">例: ローソク足の見方を教えて</p>
+                      <p className="text-[10px] text-white/25">FXについて何でも聞いてください</p>
+                      <p className="text-[9px] text-white/20">例: ローソク足の見方を教えて</p>
                     </>
                   )}
                 </div>
@@ -843,12 +951,12 @@ export default function TradePage() {
               {(chatMode === "analysis" ? analysisMessages : fxMessages).map((msg) => (
                 <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                   {msg.role === "user" ? (
-                    <div className="max-w-[85%] rounded-lg rounded-tr-sm bg-terminal-cyan/15 border border-terminal-cyan/20 px-3 py-2">
-                      <p className="text-[10px] text-foreground/90 leading-relaxed">{msg.text}</p>
+                    <div className="max-w-[85%] rounded-xl rounded-tr-sm px-3 py-2" style={{ border: "1px solid rgba(0,210,230,0.2)", background: "rgba(0,210,230,0.08)" }}>
+                      <p className="text-[10px] text-white/90 leading-relaxed">{msg.text}</p>
                     </div>
                   ) : (
                     <div className="max-w-[90%] flex flex-col gap-1.5">
-                      <div className="rounded-lg rounded-tl-sm border border-border bg-card/60 px-3 py-2">
+                      <div className="rounded-xl rounded-tl-sm px-3 py-2" style={{ border: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.03)" }}>
                         {/* Signal badge for analysis responses */}
                         {msg.signal && (
                           <div className={`mb-2 flex items-center justify-between rounded border px-3 py-1.5 ${
@@ -860,7 +968,7 @@ export default function TradePage() {
                               {msg.signal === "BUY" ? <TrendingUp className="h-3.5 w-3.5 text-terminal-green" /> :
                                msg.signal === "SELL" ? <TrendingDown className="h-3.5 w-3.5 text-terminal-red" /> :
                                <Activity className="h-3.5 w-3.5 text-terminal-amber" />}
-                              <span className="text-[9px] text-muted-foreground">AI SIGNAL</span>
+                              <span className="text-[9px] text-white/30">AI SIGNAL</span>
                             </div>
                             <span className={`text-[16px] font-bold tracking-[0.2em] ${
                               msg.signal === "BUY" ? "text-terminal-green" :
@@ -891,7 +999,7 @@ export default function TradePage() {
                                 <div key={label} className="flex flex-1 flex-col gap-0.5">
                                   <div className="flex justify-between">
                                     <span className="text-[8px] font-bold" style={{ color }}>{label}</span>
-                                    <span className="text-[8px] text-muted-foreground">{dir}</span>
+                                    <span className="text-[8px] text-white/30">{dir}</span>
                                   </div>
                                   <div className="h-1 w-full overflow-hidden rounded-full bg-border/40">
                                     <motion.div
@@ -909,7 +1017,7 @@ export default function TradePage() {
                         )}
                         {/* Main text — signalReason for analysis, text for chat/error */}
                         {(msg.signalReason || (!msg.signal && msg.text)) && (
-                          <p className="text-[10px] leading-relaxed text-foreground/80">
+                          <p className="text-[10px] leading-relaxed text-white/80">
                             {msg.signalReason || msg.text}
                           </p>
                         )}
@@ -918,7 +1026,7 @@ export default function TradePage() {
                           <div className="mt-1.5">
                             <button
                               onClick={() => toggleDetail(msg.id)}
-                              className="flex w-full items-center justify-between rounded border border-border/50 px-2 py-1 text-[9px] text-muted-foreground hover:border-terminal-cyan/30 hover:text-terminal-cyan transition-colors"
+                              className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-[9px] transition-colors" style={{ border: "1px solid rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.75)" }}
                             >
                               <span>詳細分析を{msg.detailOpen ? "閉じる" : "見る"}</span>
                               {msg.detailOpen ? <ChevronUp className="h-2.5 w-2.5" /> : <ChevronDown className="h-2.5 w-2.5" />}
@@ -931,7 +1039,7 @@ export default function TradePage() {
                                   exit={{ opacity: 0, height: 0 }}
                                   className="overflow-hidden"
                                 >
-                                  <p className="mt-1.5 rounded border border-terminal-cyan/20 bg-terminal-cyan/5 px-2 py-1.5 text-[9px] leading-relaxed text-foreground/80">
+                                  <p className="mt-1.5 rounded border border-terminal-cyan/20 bg-terminal-cyan/5 px-2 py-1.5 text-[9px] leading-relaxed text-white/80">
                                     {msg.logicJp}
                                   </p>
                                 </motion.div>
@@ -946,9 +1054,9 @@ export default function TradePage() {
               ))}
               {isAiLoading && (
                 <div className="flex justify-start">
-                  <div className="flex items-center gap-1.5 rounded-lg border border-border bg-card/60 px-3 py-2">
+                  <div className="flex items-center gap-1.5 rounded-xl px-3 py-2" style={{ border: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.03)" }}>
                     <Loader2 className="h-3 w-3 animate-spin text-terminal-cyan" />
-                    <span className="text-[10px] text-muted-foreground/60">AI分析中...</span>
+                    <span className="text-[10px] text-white/30">AI分析中...</span>
                   </div>
                 </div>
               )}
@@ -956,7 +1064,28 @@ export default function TradePage() {
             </div>
 
             {/* Input bar */}
-            <div className="shrink-0 border-t border-border bg-card/30 px-3 py-2">
+            <div className="shrink-0 border-t border-white/6 px-3 py-2" style={{ background: "rgba(5,14,28,0.6)" }}>
+              {/* Sample news chips — analysis mode only */}
+              {chatMode === "analysis" && (
+                <div className="mb-2 flex flex-wrap gap-1">
+                  {[
+                    { label: "FRB利上げ", text: "FRBが0.25%の利上げを決定。インフレ抑制を優先する姿勢を維持" },
+                    { label: "日銀緩和維持", text: "日銀が現行の金融緩和政策を維持。マイナス金利の継続を決定" },
+                    { label: "米雇用統計↑", text: "米国の雇用統計が予想を大幅に上回る。非農業部門雇用者数+30万人" },
+                    { label: "円安介入示唆", text: "日本政府・財務省が過度な円安に対し市場介入を示唆する発言" },
+                    { label: "米CPI鈍化", text: "米国CPI（消費者物価指数）が予想比低下。インフレ鈍化の兆しが見られる" },
+                  ].map((item) => (
+                    <button
+                      key={item.label}
+                      onClick={() => setChatInput(item.text)}
+                      className="rounded px-2 py-0.5 text-[9px] transition-colors hover:bg-terminal-cyan/20"
+                      style={{ border: "1px solid rgba(0,210,230,0.2)", background: "rgba(0,210,230,0.06)", color: "rgba(0,210,230,0.7)" }}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="flex gap-2">
                 <textarea
                   value={chatInput}
@@ -964,7 +1093,7 @@ export default function TradePage() {
                   onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleSend() }}
                   placeholder={chatMode === "analysis" ? "ニュース・経済指標を入力 (Ctrl+Enter)" : "FXについて質問 (Ctrl+Enter)"}
                   rows={2}
-                  className="flex-1 resize-none rounded border border-border bg-background px-2.5 py-1.5 text-[10px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/30 focus:border-terminal-cyan"
+                  className="flex-1 resize-none rounded-lg px-2.5 py-1.5 text-[10px] outline-none transition-colors" style={{ border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.8)" }}
                 />
                 <button
                   onClick={handleSend}
@@ -982,9 +1111,9 @@ export default function TradePage() {
 
           {/* Open positions */}
           <div className="flex shrink-0 max-h-52 flex-col overflow-hidden">
-            <div className="flex shrink-0 items-center gap-2 border-b border-border px-5 py-2">
+            <div className="flex shrink-0 items-center gap-2 border-b border-white/6 px-5 py-2" style={{ background: "rgba(5,14,28,0.5)" }}>
               <Activity className="h-3.5 w-3.5 text-terminal-cyan" />
-              <span className="text-[10px] font-bold tracking-[0.2em] text-muted-foreground">OPEN POSITIONS</span>
+              <span className="text-[10px] font-bold tracking-[0.2em] text-white/30">OPEN POSITIONS</span>
               {positionsWithLivePnl.length > 0 && (
                 <span className="ml-auto rounded bg-terminal-cyan/10 px-1.5 py-0.5 text-[9px] text-terminal-cyan">
                   {positionsWithLivePnl.length}
@@ -995,9 +1124,9 @@ export default function TradePage() {
             <div className="flex-1 overflow-y-auto px-4 py-3">
               {positionsWithLivePnl.length === 0 ? (
                 <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-                  <DollarSign className="h-8 w-8 text-muted-foreground/20" />
-                  <span className="text-[11px] text-muted-foreground/50">ポジションなし</span>
-                  <span className="text-[10px] text-muted-foreground/30">BUY / SELL でエントリー</span>
+                  <DollarSign className="h-8 w-8 text-white/30/20" />
+                  <span className="text-[11px] text-white/25">ポジションなし</span>
+                  <span className="text-[10px] text-white/20">BUY / SELL でエントリー</span>
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
@@ -1006,7 +1135,7 @@ export default function TradePage() {
                       key={pos.id}
                       initial={{ opacity: 0, x: 10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="rounded border border-border bg-secondary/20 p-3"
+                      className="rounded-xl p-3" style={{ border: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.025)" }}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex flex-col gap-1">
@@ -1014,13 +1143,13 @@ export default function TradePage() {
                             <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold tracking-wider ${pos.action === "BUY" ? "bg-terminal-green/15 text-terminal-green" : "bg-terminal-red/15 text-terminal-red"}`}>
                               {pos.action}
                             </span>
-                            <span className="text-[10px] text-foreground">${pos.quantity}</span>
-                            <span className="text-[9px] text-muted-foreground">#{pos.id}</span>
+                            <span className="text-[10px] text-white/80">${pos.quantity}</span>
+                            <span className="text-[9px] text-white/30">#{pos.id}</span>
                           </div>
-                          <div className="text-[10px] text-muted-foreground">
-                            Entry: <span className="text-foreground">{pos.entry_price.toFixed(3)}</span>
+                          <div className="text-[10px] text-white/30">
+                            Entry: <span className="text-white/80">{pos.entry_price.toFixed(3)}</span>
                           </div>
-                          <div className="text-[10px] text-muted-foreground">
+                          <div className="text-[10px] text-white/30">
                             現在: <motion.span key={pos.current_price.toFixed(3)} initial={{ opacity: 0.5 }} animate={{ opacity: 1 }}
                               className={`font-bold ${pos.pnl >= 0 ? "text-terminal-green" : "text-terminal-red"}`}
                             >{pos.current_price.toFixed(3)}</motion.span>
@@ -1036,15 +1165,15 @@ export default function TradePage() {
                             {pos.pnl >= 0 ? "+" : ""}${pos.pnl.toFixed(2)}
                           </motion.span>
                           <button
-                            onClick={() => handleClose(pos.id)}
+                            onClick={() => handleClose(pos.id, pos)}
                             disabled={isLoadingTrade}
-                            className="flex items-center gap-1 rounded border border-border px-2 py-1 text-[9px] text-muted-foreground transition-colors hover:border-terminal-red hover:text-terminal-red disabled:opacity-40"
+                            className="flex items-center gap-1 rounded-lg px-2 py-1 text-[9px] transition-colors disabled:opacity-40" style={{ border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.75)" }}
                           >
                             <X className="h-2.5 w-2.5" />CLOSE
                           </button>
                         </div>
                       </div>
-                      <div className="mt-1.5 text-[9px] text-muted-foreground/40">
+                      <div className="mt-1.5 text-[9px] text-white/20">
                         {pos.entry_time.slice(0, 16).replace("T", " ")}
                       </div>
                     </motion.div>
@@ -1057,11 +1186,11 @@ export default function TradePage() {
       </div>
 
       {/* Footer */}
-      <div className="flex shrink-0 items-center gap-3 border-t border-border bg-card/50 px-5 py-1.5">
-        <span className="text-[9px] tracking-wider text-muted-foreground/40">
+      <div className="flex shrink-0 items-center gap-3 border-t border-white/6 px-5 py-1.5" style={{ background: "rgba(5,14,28,0.8)" }}>
+        <span className="text-[9px] tracking-wider text-white/20">
           ⚠ これはデモトレードです。価格はyfinance実データ＋シミュレーション。
         </span>
-        <span className="ml-auto text-[9px] text-muted-foreground/30">USD/JPY 5M · auto-refresh 60s</span>
+        <span className="ml-auto text-[9px] text-white/20">USD/JPY 5M · auto-refresh 60s</span>
       </div>
     </div>
   )
