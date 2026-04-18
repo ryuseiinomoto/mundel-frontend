@@ -34,18 +34,7 @@ import {
   Bot,
 } from "lucide-react"
 import Link from "next/link"
-
-// -------------------------------------------------------------------
-// API
-// -------------------------------------------------------------------
-function getApiBase(): string {
-  const env = process.env.NEXT_PUBLIC_API_URL
-  if (env && env.trim()) return env.replace(/\/$/, "")
-  if (typeof window === "undefined") return "http://localhost:8080"
-  const h = window.location.hostname
-  if (h === "localhost" || h === "127.0.0.1") return "http://localhost:8080"
-  return "https://mundel-backend-490996932437.europe-west1.run.app"
-}
+import { getApiBase } from "@/lib/api"
 
 // -------------------------------------------------------------------
 // Types
