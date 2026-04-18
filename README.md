@@ -1,27 +1,86 @@
-# Mundel Frontend 📈
+# Mundel
 
-マクロ経済理論をリアルタイムに可視化する、経済学部生ならではの FX 分析ターミナル。
+> Learn FX through macroeconomics — not intuition.
 
-##  Concept
-「ニュースの一行が、経済モデルをどう動かすのか？」
-このプロジェクトは、マクロ経済学の「マンデル＝フレミング・モデル（IS-LM-BP）」をコードで表現し、投資判断に論理的な根拠を与えるために開発しました。
+**Live Demo**: https://mundel-frontend-490996932437.europe-west1.run.app
 
-##  Key Features & Engineering
-- **Mundel-Fleming Model Visualization**:
-  - `Recharts` を高度にカスタマイズし、IS/LM/BP 曲線の動的なシフトを実装。
-  - **SVG Vector Drawing**: 均衡点の移動をベクトル（矢印）で描画し、経済の変化の方向性を直感的に理解できる UX を実現。
-- **Responsive Terminal UI**:
-  - `Tailwind CSS` を使用し、情報の密度が高い「プロ向けターミナル」の質感を追求。
-  - 複雑なグラフと AI インサイトを 1 画面に収める情報設計。
-- **Environment Synchronization**:
-  - 開発環境（Local/Network）における HMR や CORS の問題をクリアし、堅牢なフロントエンド構成を構築。
+---
 
-##  Tech Stack
-- **Framework**: Next.js 14 (App Router)
-- **Visualization**: Recharts, Lucide React
-- **Styling**: Tailwind CSS, Shadcn UI
-- **Language**: TypeScript
+## Why I built this
 
-##  Technical Challenge: "The Ghost in the Network"
-**課題**: 開発中、特定のネットワーク経由で古いコードが配信され続けるキャッシュ問題が発生。
-**解決策**: ポートのプロセス管理（`lsof`, `kill`）の徹底と、環境変数による API URL の動的切り替えを実装。インフラレベルでのデバッグ能力を養いました。
+大学でマクロ経済学を学ぶ中で、FX初心者が陥りやすい問題に気づきました。
+
+- 根拠のないトレードで損失を出す
+- 情報商材に頼り、経済の仕組みを理解しないまま売買する
+- 経済ニュースが為替にどう影響するかがわからない
+
+「大学で学んだIS-LM-BPモデルをプロダクトに落とし込めば、根拠を持ってトレードできる人を増やせるのではないか」という発想から開発をスタートしました。
+
+スキャルピングではなく、**スイング・ポジショントレードに必要なマクロ経済の読み方**を、実際のニュースを通じて鍛えることをコンセプトにしています。
+
+---
+
+## What you can do
+
+| ステップ | 内容 |
+|---------|------|
+| 📰 ニュースを入力 | 経済ニュースを入力するとAIがIS・LM・BPの各曲線がどう動くかを解析 |
+| 📊 グラフで確認 | IS-LM-BPモデルのグラフがリアルタイムでシフトし、経済変化を視覚的に理解 |
+| 🤖 AIシグナル | BUY / SELL / HOLD のシグナルと、その根拠を日本語で解説 |
+| 💹 模擬トレード | 分析した根拠をもとに模擬トレードを実践。損益で理解度を確認 |
+| 📚 学習コース | 為替の基礎からIS-LM-BPまで、11ステップで体系的に学習 |
+
+---
+
+## Tech Stack
+
+### Frontend
+- **Next.js** (App Router / TypeScript)
+- **Tailwind CSS**
+- **Framer Motion** — ページ遷移・アニメーション
+- **Recharts** — IS-LM-BPグラフの描画
+- **i18next** — 多言語対応（日本語 / English / 中文）
+
+### Backend
+- **FastAPI** (Python)
+- **Gemini API** — ニュースのマクロ経済分析
+- **NewsAPI** — FX関連ニュースの取得
+- **FRED API** — 米国・日本のマクロ指標（金利・CPI）
+- **yfinance** — USD/JPY リアルタイムレート
+
+### Infrastructure
+- **Google Cloud Run** — フロントエンド・バックエンド両方をコンテナデプロイ
+
+---
+
+## Architecture
+
+```
+User
+ │
+ ├─ /news        ニュース入力 → POST /api/analyze
+ │                               │
+ │                    Gemini API（IS/LM/BPシフト量を生成）
+ │                    + NewsAPI / FRED / yfinance（市場データ）
+ │
+ ├─ /model       IS-LM-BPグラフの表示（localStorageから読み込み）
+ ├─ /signal      AIシグナル + マクロ影響の詳細
+ ├─ /trade       模擬トレード（SQLiteで残高・ポジション管理）
+ └─ /learn       11ステップ学習コース（進捗をlocalStorageで管理）
+```
+
+---
+
+## Background
+
+経済学部での学習がきっかけで、IS-LM-BPモデルが「理論」で終わらせるには惜しいと感じていました。このモデルは、金利・為替・所得の相互関係を一つの図で説明できる強力なフレームワークです。
+
+それをFXトレードの「予習ツール」として使えないかと考えたのが、Mundelの出発点です。
+
+---
+
+## Japanese Overview
+
+**Mundel（マンデル）** は、マクロ経済学をベースにFXの判断根拠を鍛えるための学習アプリです。
+
+経済ニュースをAIが分析し、IS-LM-BPモデルのグラフをリアルタイムで更新。「なぜ今ドル円が動いているのか」を理論から理解することを目標としています。情報商材に頼らず、経済の仕組みから根拠のあるトレードができる人を増やしたいという思いで開発しました。
