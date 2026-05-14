@@ -6,14 +6,19 @@ export interface ShiftState {
 
 export interface AnalysisResult {
   analysis?: {
-    is_shift?: string
-    lm_shift?: string
-    bp_shift?: string
+    is_shift?: number
+    lm_shift?: number
+    bp_shift?: number
     logic_jp?: string
+    policy_effectiveness?: string
     error?: string
   }
   market_data?: {
-    exchange?: { current_price?: number; pair?: string; closes_7d?: unknown[] }
+    exchange?: {
+      current_price?: number
+      pair?: string
+      closes_7d?: Array<{ date: string; close: number }>
+    }
     indicators?: {
       us_policy_rate?: number
       us_cpi?: number
@@ -22,10 +27,15 @@ export interface AnalysisResult {
     }
     errors?: string[]
   }
+  shifts_delta?: {
+    is?: number
+    lm?: number
+    bp?: number
+  }
   timestamp?: string
-  is_shift?: string
-  lm_shift?: string
-  bp_shift?: string
+  is_shift?: number
+  lm_shift?: number
+  bp_shift?: number
   logic_jp?: string
   explanation?: string
   policy_effectiveness?: string
@@ -40,12 +50,4 @@ export interface AnalysisResult {
   summary?: string
   signal?: "BUY" | "SELL" | "HOLD"
   signal_reason?: string
-  [key: string]: unknown
-}
-
-export function directionToNumber(dir: string | undefined): number {
-  if (!dir || dir === "none") return 0
-  if (dir === "right" || dir === "upward") return 1
-  if (dir === "left" || dir === "downward") return -1
-  return 0
 }
