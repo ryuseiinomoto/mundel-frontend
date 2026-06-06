@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 96" width="320" height="96" role="img" aria-labelledby="t d">
+  <title id="t">mundel logo (reversed)</title>
+  <desc id="d">mundel combination logo for dark backgrounds.</desc>
+  <g transform="translate(8,8)">
+    <rect x="2" y="2" width="76" height="76" rx="19" fill="none" stroke="#E2E8F0" stroke-width="3"/>
+    <g stroke="#5B7AB0" stroke-width="2.4" stroke-linecap="round">
+      <line x1="20" y1="64" x2="20" y2="18"/>
+      <line x1="20" y1="64" x2="66" y2="64"/>
+    </g>
+    <polygon points="20,14 17.6,19 22.4,19" fill="#5B7AB0"/>
+    <polygon points="70,64 65,61.6 65,66.4" fill="#5B7AB0"/>
+    <path d="M24,24 C36,32 48,46 62,56" fill="none" stroke="#93B4F5" stroke-width="4.2" stroke-linecap="round"/>
+    <path d="M24,56 C36,48 48,32 62,24" fill="none" stroke="#ffffff" stroke-width="4.2" stroke-linecap="round"/>
+    <circle cx="42.5" cy="40" r="6.4" fill="#0A1A33"/>
+    <circle cx="42.5" cy="40" r="4.2" fill="#F59E0B"/>
+  </g>
+  <text x="100" y="61" font-family="Geist, 'Geist Sans', 'Helvetica Neue', Arial, sans-serif" font-size="46" font-weight="700" letter-spacing="-1.5" fill="#ffffff">mundel</text>
+</svg>

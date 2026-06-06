@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mundel — logo preview</title>
+<style>
+  :root{ --navy:#102A56; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family:Geist,'Helvetica Neue',Arial,sans-serif; color:var(--navy); background:#f5f6f8; }
+  header{ padding:32px 40px; border-bottom:1px solid #e2e8f0; background:#fff; }
+  header h1{ margin:0 0 4px; font-size:20px; letter-spacing:-.5px; }
+  header p{ margin:0; color:#64748b; font-size:14px; }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:20px; padding:32px 40px; }
+  .card{ background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:24px; display:flex; flex-direction:column; gap:14px; align-items:center; }
+  .card.dark{ background:#0a0a0a; border-color:#262626; }
+  .card .frame{ flex:1; display:flex; align-items:center; justify-content:center; width:100%; min-height:96px; }
+  .label{ font-size:12px; color:#94a3b8; font-family:ui-monospace,monospace; }
+  .card.dark .label{ color:#71717a; }
+  img{ max-width:100%; height:auto; }
+  .sizes{ display:flex; gap:18px; align-items:center; }
+</style>
+</head>
+<body>
+<header>
+  <h1>mundel — Logo system</h1>
+  <p>Concept “Equilibrium” · IS-LM cross · academic navy</p>
+</header>
+<div class="grid">
+  <div class="card"><div class="frame"><img src="mundel-horizontal.svg" width="300"></div><div class="label">horizontal — primary</div></div>
+  <div class="card dark"><div class="frame"><img src="mundel-horizontal-reversed.svg" width="300"></div><div class="label">horizontal — reversed</div></div>
+  <div class="card"><div class="frame"><img src="mundel-horizontal-mono.svg" width="300"></div><div class="label">horizontal — monochrome</div></div>
+  <div class="card"><div class="frame"><img src="mundel-vertical.svg" width="150"></div><div class="label">vertical</div></div>
+  <div class="card"><div class="frame"><img src="mundel-wordmark.svg" width="200"></div><div class="label">wordmark</div></div>
+  <div class="card"><div class="frame sizes"><img src="mundel-icon.svg" width="80"><img src="mundel-icon.svg" width="48"><img src="mundel-icon.svg" width="28"></div><div class="label">icon — framed (80/48/28)</div></div>
+  <div class="card"><div class="frame sizes"><img src="mundel-icon-tile.svg" width="80"><img src="mundel-icon-tile.svg" width="48"></div><div class="label">app icon — navy tile</div></div>
+  <div class="card"><div class="frame sizes"><img src="mundel-icon-minimal.svg" width="80"><img src="mundel-icon-minimal.svg" width="40"></div><div class="label">mark — minimal</div></div>
+  <div class="card"><div class="frame sizes"><img src="mundel-favicon.svg" width="32"><img src="mundel-favicon.svg" width="16"></div><div class="label">favicon (32/16)</div></div>
+</div>
+</body>
+</html>

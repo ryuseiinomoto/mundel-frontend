@@ -1,8 +1,19 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Activity, Zap, TrendingUp } from "lucide-react"
+import { Activity, TrendingUp } from "lucide-react"
 import Link from "next/link"
+
+function MundelMark({ className }: { className?: string }) {
+  // IS-LM equilibrium mark — curves inherit currentColor, equilibrium point in amber
+  return (
+    <svg viewBox="0 0 80 80" fill="none" className={className} aria-hidden="true">
+      <path d="M14,20 C30,32 46,52 66,64" stroke="currentColor" strokeWidth="7" strokeLinecap="round" />
+      <path d="M14,64 C30,52 46,32 66,20" stroke="currentColor" strokeWidth="7" strokeLinecap="round" opacity="0.55" />
+      <circle cx="38.5" cy="42" r="9" fill="var(--terminal-amber)" />
+    </svg>
+  )
+}
 
 export function TerminalHeader() {
   const [time, setTime] = useState("")
@@ -26,12 +37,12 @@ export function TerminalHeader() {
   return (
     <header className="flex items-center justify-between border-b border-border bg-card px-5 py-2.5">
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2.5">
-          <Zap className="h-4 w-4 text-terminal-green" fill="currentColor" />
+        <Link href="/" className="flex items-center gap-2.5">
+          <MundelMark className="h-5 w-5 text-terminal-green" />
           <span className="text-base font-bold tracking-[0.25em] text-terminal-green">
             MUNDEL
           </span>
-        </div>
+        </Link>
         <div className="h-4 w-px bg-border" />
         <span className="text-[10px] tracking-wider text-muted-foreground">
           Mundell-Fleming FX Analysis Terminal
