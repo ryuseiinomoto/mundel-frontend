@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="mundel">
+  <rect x="0" y="0" width="32" height="32" rx="8" fill="#102A56"/>
+  <path d="M8,9 C13,13 19,21 25,25" fill="none" stroke="#93B4F5" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M8,25 C13,21 19,13 25,9" fill="none" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round"/>
+  <circle cx="16.5" cy="17" r="3.4" fill="#102A56"/>
+  <circle cx="16.5" cy="17" r="2.3" fill="#F59E0B"/>
+</svg>

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160" role="img" aria-labelledby="t d">
+  <title id="t">mundel logo</title>
+  <desc id="d">An IS-LM curve cross with an amber equilibrium point above the mundel wordmark.</desc>
+
+  <g transform="translate(44,16)">
+    <rect x="2" y="2" width="68" height="68" rx="17" fill="#ffffff" stroke="#102A56" stroke-width="3"/>
+    <g stroke="#CBD5E1" stroke-width="2.2" stroke-linecap="round">
+      <line x1="18" y1="58" x2="18" y2="16"/>
+      <line x1="18" y1="58" x2="60" y2="58"/>
+    </g>
+    <polygon points="18,12 15.8,16.5 20.2,16.5" fill="#CBD5E1"/>
+    <polygon points="64,58 59,55.8 59,60.2" fill="#CBD5E1"/>
+    <path d="M22,22 C33,29 44,42 56,51" fill="none" stroke="#1E40AF" stroke-width="3.8" stroke-linecap="round"/>
+    <path d="M22,51 C33,44 44,29 56,22" fill="none" stroke="#3B82F6" stroke-width="3.8" stroke-linecap="round"/>
+    <circle cx="39" cy="36.5" r="5.8" fill="#ffffff"/>
+    <circle cx="39" cy="36.5" r="3.8" fill="#F59E0B"/>
+  </g>
+
+  <text x="80" y="128" text-anchor="middle" font-family="Geist, 'Geist Sans', 'Helvetica Neue', Arial, sans-serif" font-size="40" font-weight="700" letter-spacing="-1.3" fill="#102A56">mundel</text>
+</svg>

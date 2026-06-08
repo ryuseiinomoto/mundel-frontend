@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mundel — Learn FX through macroeconomics</title>
+<meta name="description" content="マクロ経済学（IS-LM-BPモデル）でFXの判断根拠を鍛える学習アプリ。経済ニュースをAIが解析し、理論から相場を読む力を養います。">
+<meta property="og:title" content="mundel — Learn FX through macroeconomics">
+<meta property="og:description" content="情報商材ではなく、経済の仕組みから根拠のあるトレードを。IS-LM-BPモデル × AIニュース解析の学習アプリ。">
+<meta property="og:type" content="website">
+<link rel="icon" href="assets/mundel-favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<header class="nav" id="nav">
+  <a class="nav__brand" href="#top" aria-label="mundel home">
+    <img class="nav__logo nav__logo--light" src="assets/mundel-horizontal-reversed.svg" alt="mundel" height="34">
+    <img class="nav__logo nav__logo--dark" src="assets/mundel-horizontal.svg" alt="mundel" height="34">
+  </a>
+  <nav class="nav__links">
+    <a href="#why">Why</a>
+    <a href="#how">使い方</a>
+    <a href="#tech">技術</a>
+    <a class="btn btn--ghost" href="https://github.com/ryuseiinomoto/mundel-frontend" target="_blank" rel="noopener">GitHub</a>
+    <a class="btn btn--primary" href="https://mundel-frontend-490996932437.europe-west1.run.app" target="_blank" rel="noopener">アプリを開く</a>
+  </nav>
+  <button class="nav__toggle" id="navToggle" aria-label="menu">☰</button>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="hero hero--dark" id="top">
+  <div class="hero__bg" aria-hidden="true">
+    <div class="stars stars--1"></div>
+    <div class="stars stars--2"></div>
+    <div class="stars stars--3"></div>
+    <div class="glow glow--cyan"></div>
+    <div class="space">
+      <div class="orbit orbit--far"><span class="comet"></span></div>
+      <div class="earth">
+        <div class="earth__surface"></div>
+        <div class="earth__atmo"></div>
+        <div class="earth__terminator"></div>
+      </div>
+      <div class="orbit orbit--moon"><span class="moon"></span></div>
+    </div>
+    <div class="hero__veil"></div>
+  </div>
+
+  <div class="hero__inner reveal">
+    <div class="hero__mark draw-mark" aria-hidden="true">
+      <svg viewBox="0 0 80 80" fill="none">
+        <path d="M14,20 C30,32 46,52 66,64" stroke="#93B4F5" stroke-width="6" stroke-linecap="round"/>
+        <path d="M14,64 C30,52 46,32 66,20" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+        <circle class="hero__dot" cx="38.5" cy="42" r="8.4" fill="#0A1A33"/>
+        <circle class="hero__dot" cx="38.5" cy="42" r="5.6" fill="#F59E0B"/>
+      </svg>
+    </div>
+    <p class="hero__eyebrow">MUNDELL-FLEMING · IS-LM-BP MODEL</p>
+    <h1 class="hero__title">Learn FX through<br><span class="grad">macroeconomics</span><br class="br-mobile"> — not intuition.</h1>
+    <p class="hero__lead">
+      経済ニュースをAIが解析し、IS-LM-BPモデルのグラフがリアルタイムでシフト。
+      「なぜ今ドル円が動いているのか」を、感覚ではなく<strong>理論</strong>から理解する学習アプリです。
+    </p>
+    <div class="hero__cta">
+      <a class="btn btn--amber btn--lg btn--glow" href="https://mundel-frontend-490996932437.europe-west1.run.app" target="_blank" rel="noopener">
+        無料でニュースを解析してみる <span class="arrow">→</span>
+      </a>
+      <a class="btn btn--outline-light btn--lg" href="#how">使い方を見る</a>
+    </div>
+  </div>
+
+  <!-- product mockup (faithful recreation of the app's terminal UI) -->
+  <div class="mock reveal" aria-hidden="true">
+    <div class="mock__win">
+      <div class="mock__bar">
+        <span class="mock__dots"><i></i><i></i><i></i></span>
+        <span class="mock__brand">
+          <svg viewBox="0 0 80 80" width="14" height="14" fill="none">
+            <path d="M14,20 C30,32 46,52 66,64" stroke="#22c55e" stroke-width="7" stroke-linecap="round"/>
+            <path d="M14,64 C30,52 46,32 66,20" stroke="#22c55e" stroke-width="7" stroke-linecap="round" opacity=".5"/>
+            <circle cx="38.5" cy="42" r="9" fill="#eab308"/>
+          </svg>
+          MUNDEL
+        </span>
+        <span class="mock__status"><i class="live"></i> LIVE · USD/JPY</span>
+      </div>
+      <div class="mock__body">
+        <aside class="mock__side">
+          <div class="mock__k">NEWS INPUT</div>
+          <div class="mock__news">FRB、利上げ継続を示唆。<br>市場は引き締め長期化を織り込み。</div>
+          <button class="mock__btn">ANALYZE ▸</button>
+          <div class="mock__sig">
+            <div class="mock__sigrow"><span>SIGNAL</span><b class="buy">BUY</b></div>
+            <div class="mock__sigrow"><span>USD/JPY</span><b class="up">▲ 0.42%</b></div>
+            <div class="mock__sigrow"><span>信頼度</span><b>78%</b></div>
+          </div>
+        </aside>
+        <div class="mock__chart">
+          <div class="mock__k">IS-LM-BP MODEL</div>
+          <svg viewBox="0 0 360 250" class="chart">
+            <!-- grid -->
+            <g stroke="#1c3357" stroke-width="1">
+              <line x1="48" y1="40" x2="340" y2="40"/>
+              <line x1="48" y1="90" x2="340" y2="90"/>
+              <line x1="48" y1="140" x2="340" y2="140"/>
+              <line x1="48" y1="190" x2="340" y2="190"/>
+            </g>
+            <!-- axes -->
+            <g stroke="#3a5891" stroke-width="1.6" stroke-linecap="round">
+              <line x1="48" y1="20" x2="48" y2="212"/>
+              <line x1="48" y1="212" x2="346" y2="212"/>
+            </g>
+            <text x="34" y="26" class="ax">i</text>
+            <text x="348" y="216" class="ax">Y</text>
+            <!-- BP curve (amber, dashed) -->
+            <path d="M60,176 C140,160 230,128 330,108" fill="none" stroke="#eab308" stroke-width="2.4" stroke-dasharray="5 5" stroke-linecap="round"/>
+            <!-- LM curve (green, up) -->
+            <path d="M64,196 C150,176 220,108 330,66" fill="none" stroke="#22c55e" stroke-width="3" stroke-linecap="round"/>
+            <!-- IS shifted (dashed cyan, news effect) -->
+            <path d="M96,52 C168,82 240,140 332,182" fill="none" stroke="#06b6d4" stroke-width="2.2" stroke-dasharray="6 5" stroke-linecap="round" opacity=".55"/>
+            <!-- IS curve (cyan, down) -->
+            <path d="M64,58 C140,90 215,140 320,188" fill="none" stroke="#06b6d4" stroke-width="3" stroke-linecap="round"/>
+            <!-- shift arrow -->
+            <path d="M104,62 q22,-6 30,-2" fill="none" stroke="#7dd3fc" stroke-width="1.6" stroke-linecap="round"/>
+            <polygon points="136,54 134,64 128,58" fill="#7dd3fc"/>
+            <!-- equilibrium -->
+            <circle cx="183" cy="123" r="9" fill="#eab308" opacity=".18"/>
+            <circle cx="183" cy="123" r="4" fill="#eab308"/>
+            <!-- labels -->
+            <text x="300" y="196" class="lbl" fill="#06b6d4">IS</text>
+            <text x="306" y="64" class="lbl" fill="#22c55e">LM</text>
+            <text x="322" y="104" class="lbl" fill="#eab308">BP</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- proof strip -->
+  <div class="proof reveal">
+    <span class="proof__label">REAL MACRO DATA · 経済学部発のロジック</span>
+    <div class="proof__items">
+      <span class="proof__src">FRED</span>
+      <span class="proof__src">NewsAPI</span>
+      <span class="proof__src">Gemini</span>
+      <span class="proof__src">yfinance</span>
+      <i class="proof__sep"></i>
+      <span class="proof__tag">IS-LM-BPモデル</span>
+      <span class="proof__tag">3言語対応</span>
+    </div>
+  </div>
+</section>
+
+<!-- signature curve divider -->
+<div class="divider reveal draw" aria-hidden="true">
+  <svg viewBox="0 0 1200 80" preserveAspectRatio="none">
+    <path d="M0,60 C300,60 360,20 600,20 C840,20 900,60 1200,60" fill="none" stroke="url(#dg)" stroke-width="2"/>
+    <defs><linearGradient id="dg" x1="0" x2="1"><stop offset="0" stop-color="#1E40AF" stop-opacity="0"/><stop offset=".5" stop-color="#3B82F6"/><stop offset="1" stop-color="#F59E0B" stop-opacity="0"/></linearGradient></defs>
+  </svg>
+</div>
+
+<!-- ============ WHY ============ -->
+<section class="section" id="why">
+  <div class="section__head reveal">
+    <span class="kicker">WHY I BUILT THIS</span>
+    <h2>大学で学んだ理論を、<br>根拠のあるトレードに変えたかった。</h2>
+  </div>
+  <div class="why reveal">
+    <p class="why__lead">
+      大学でマクロ経済学を学ぶ中で、FX初心者が陥りやすい問題に気づきました。
+    </p>
+    <ul class="why__pain">
+      <li><span>01</span>根拠のないトレードで損失を出す</li>
+      <li><span>02</span>情報商材に頼り、経済の仕組みを理解しないまま売買する</li>
+      <li><span>03</span>経済ニュースが為替にどう影響するかがわからない</li>
+    </ul>
+    <p class="why__body">
+      IS-LM-BPモデルは、金利・為替・所得の相互関係を一つの図で説明できる強力なフレームワークです。
+      「これを理論で終わらせるのは惜しい」——FXトレードの<strong>予習ツール</strong>として使えないかと考えたのが、mundel の出発点でした。
+    </p>
+    <p class="why__body">
+      スキャルピングではなく、<strong>スイング・ポジショントレードに必要なマクロ経済の読み方</strong>を、
+      実際のニュースを通じて鍛える。情報商材に頼らず、経済の仕組みから根拠を持てる人を増やしたい——そんな思いで開発しています。
+    </p>
+  </div>
+</section>
+
+<!-- ============ HOW / FEATURES ============ -->
+<section class="section section--alt" id="how">
+  <div class="section__head reveal">
+    <span class="kicker">HOW IT WORKS</span>
+    <h2>ニュースから、根拠ある一手まで。</h2>
+    <p class="section__sub">経済ニュースを入力するだけで、理論にもとづいた解析とシグナルが返ってきます。</p>
+  </div>
+  <div class="steps">
+    <article class="step reveal">
+      <div class="step__no">01</div>
+      <div class="step__ico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="15" height="14" rx="1.5"/><path d="M18 8h2a1 1 0 0 1 1 1v8a2 2 0 0 1-2 2H6"/><line x1="6.5" y1="9" x2="14.5" y2="9"/><line x1="6.5" y1="12.5" x2="14.5" y2="12.5"/><line x1="6.5" y1="16" x2="11" y2="16"/></svg></div>
+      <h3>ニュースを入力</h3>
+      <p>経済ニュースを入力すると、AI（Gemini）が IS・LM・BP の各曲線がどう動くかを解析します。</p>
+    </article>
+    <article class="step reveal">
+      <div class="step__no">02</div>
+      <div class="step__ico"><svg viewBox="0 0 24 24"><path d="M4 4v16h16"/><polyline points="7,14 11,10 14,12 19,6"/><polyline points="15,6 19,6 19,10"/></svg></div>
+      <h3>グラフで確認</h3>
+      <p>IS-LM-BPモデルのグラフがリアルタイムでシフト。経済の変化を視覚的に理解できます。</p>
+    </article>
+    <article class="step reveal">
+      <div class="step__no">03</div>
+      <div class="step__ico"><svg viewBox="0 0 24 24"><path d="M3 12h4l3 7 4-14 3 7h4"/></svg></div>
+      <h3>AIシグナル</h3>
+      <p>BUY / SELL / HOLD のシグナルと、その根拠を日本語で解説。判断のプロセスごと学べます。</p>
+    </article>
+    <article class="step reveal">
+      <div class="step__no">04</div>
+      <div class="step__ico"><svg viewBox="0 0 24 24"><line x1="7" y1="5" x2="7" y2="19"/><rect x="5" y="8" width="4" height="7" rx="1"/><line x1="16" y1="6" x2="16" y2="18"/><rect x="14" y="10" width="4" height="5" rx="1"/></svg></div>
+      <h3>模擬トレード</h3>
+      <p>分析した根拠をもとに模擬トレードを実践。損益で自分の理解度を確認できます。</p>
+    </article>
+  </div>
+  <div class="course reveal">
+    <div class="course__txt">
+      <span class="kicker">FX BEGINNER COURSE</span>
+      <h3>為替の基礎から IS-LM-BP まで、11ステップで体系的に。</h3>
+      <p>各ステップのクイズに正解するとクリア。最後は模擬トレードで実践し、根拠を持って相場を読む力を身につけます。</p>
+    </div>
+    <a class="btn btn--primary" href="https://mundel-frontend-490996932437.europe-west1.run.app" target="_blank" rel="noopener">学習を始める <span class="arrow">→</span></a>
+  </div>
+</section>
+
+<!-- signature curve divider -->
+<div class="divider reveal draw" aria-hidden="true">
+  <svg viewBox="0 0 1200 80" preserveAspectRatio="none">
+    <path d="M0,20 C300,20 360,60 600,60 C840,60 900,20 1200,20" fill="none" stroke="url(#dg2)" stroke-width="2"/>
+    <defs><linearGradient id="dg2" x1="0" x2="1"><stop offset="0" stop-color="#F59E0B" stop-opacity="0"/><stop offset=".5" stop-color="#3B82F6"/><stop offset="1" stop-color="#1E40AF" stop-opacity="0"/></linearGradient></defs>
+  </svg>
+</div>
+
+<!-- ============ TECH ============ -->
+<section class="section" id="tech">
+  <div class="section__head reveal">
+    <span class="kicker">TECH STACK & ARCHITECTURE</span>
+    <h2>理論を、動くプロダクトに。</h2>
+  </div>
+  <div class="tech reveal">
+    <div class="tech__col">
+      <h4><span class="dot"></span>Frontend</h4>
+      <ul>
+        <li>Next.js <em>App Router / TypeScript</em></li>
+        <li>Tailwind CSS</li>
+        <li>Framer Motion <em>アニメーション</em></li>
+        <li>Recharts <em>IS-LM-BPグラフ描画</em></li>
+        <li>i18next <em>日 / English / 中文</em></li>
+      </ul>
+    </div>
+    <div class="tech__col">
+      <h4><span class="dot"></span>Backend</h4>
+      <ul>
+        <li>FastAPI <em>Python</em></li>
+        <li>Gemini API <em>ニュースのマクロ解析</em></li>
+        <li>NewsAPI <em>FX関連ニュース</em></li>
+        <li>FRED API <em>金利・CPI 指標</em></li>
+        <li>yfinance <em>USD/JPY レート</em></li>
+      </ul>
+    </div>
+    <div class="tech__col">
+      <h4><span class="dot"></span>Infrastructure</h4>
+      <ul>
+        <li>Google Cloud Run <em>フロント / バックエンド</em></li>
+        <li>SQLite <em>残高・ポジション管理</em></li>
+        <li>localStorage <em>学習進捗・グラフ状態</em></li>
+        <li>Server-side proxy <em>APIキー保護</em></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="arch reveal">
+    <div class="arch__title">Architecture</div>
+    <pre class="arch__flow">
+User
+ │
+ ├─ /news    ニュース入力 → POST /api/analyze
+ │              └─ Gemini（IS/LM/BPシフト量）+ NewsAPI / FRED / yfinance
+ │
+ ├─ /model   IS-LM-BPグラフ表示
+ ├─ /signal  AIシグナル + マクロ影響の詳細
+ ├─ /trade   模擬トレード（SQLite）
+ └─ /learn   11ステップ学習コース</pre>
+  </div>
+</section>
+
+<!-- ============ CTA ============ -->
+<section class="cta reveal">
+  <div class="cta__mark" aria-hidden="true">
+    <svg viewBox="0 0 80 80" fill="none">
+      <path d="M14,20 C30,32 46,52 66,64" stroke="#93B4F5" stroke-width="6" stroke-linecap="round"/>
+      <path d="M14,64 C30,52 46,32 66,20" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="38.5" cy="42" r="8.4" fill="#0A1A33"/>
+      <circle cx="38.5" cy="42" r="5.6" fill="#F59E0B"/>
+    </svg>
+  </div>
+  <h2>感覚ではなく、理論で読む。</h2>
+  <p>mundel で、根拠のあるトレードへの第一歩を。</p>
+  <div class="cta__btns">
+    <a class="btn btn--amber btn--lg" href="https://mundel-frontend-490996932437.europe-west1.run.app" target="_blank" rel="noopener">アプリを試す <span class="arrow">→</span></a>
+    <a class="btn btn--outline-light btn--lg" href="https://github.com/ryuseiinomoto/mundel-frontend" target="_blank" rel="noopener">GitHub で見る</a>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="footer">
+  <img src="assets/mundel-horizontal.svg" alt="mundel" height="28">
+  <p>Learn FX through macroeconomics — not intuition.</p>
+  <small>© 2026 mundel · Built with Next.js & FastAPI</small>
+</footer>
+
+<script>
+  // scroll reveal
+  const io = new IntersectionObserver((es)=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+  // sticky nav shadow
+  const nav=document.getElementById('nav');
+  addEventListener('scroll',()=>nav.classList.toggle('nav--scrolled',scrollY>8));
+  // mobile menu
+  document.getElementById('navToggle').addEventListener('click',()=>nav.classList.toggle('nav--open'));
+</script>
+</body>
+</html>
