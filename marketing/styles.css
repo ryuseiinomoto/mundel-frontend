@@ -374,6 +374,9 @@ strong{color:var(--navy);font-weight:700}
 .footer img{margin:0 auto 14px;opacity:.9}
 .footer p{color:var(--muted);font-size:14px}
 .footer small{display:block;margin-top:10px;color:#94a3b8;font-size:12px;font-family:var(--mono)}
+.footer__credit{margin-top:6px;font-size:10.5px;color:#aab4c2}
+.footer__credit a{color:#64748b;text-decoration:underline}
+.footer__credit a:hover{color:var(--navy)}
 
 /* ---------- reveal ---------- */
 .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
